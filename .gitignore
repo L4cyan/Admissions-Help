@@ -32,3 +32,5 @@ data/gaps.json
 
 # local QA screenshots
 screenshots/
+
+.vercel

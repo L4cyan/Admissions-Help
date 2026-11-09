@@ -629,9 +629,11 @@ export function AdminDesk() {
     return (
       <main className="grid min-h-dvh place-items-center bg-cream px-4 py-10">
         <section className="w-full max-w-sm">
-          <div className="mx-auto h-36 w-32">
-            <Chibi variant="director" className="h-full w-full" />
-          </div>
+          <img
+            src="/brand/adzu-ask-logo.svg"
+            alt="AdZU Ask"
+            className="mx-auto h-24 w-24"
+          />
           <div className="paper-card mt-2 p-6">
             <p className="kicker text-center">Staff only</p>
             <h1 className="mt-1 text-center font-display text-2xl font-semibold text-navy-950">
@@ -706,7 +708,11 @@ export function AdminDesk() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl border border-line bg-paper">
-              <Chibi variant="director" className="h-10 w-10" />
+              <img
+                src="/brand/adzu-ask-logo.svg"
+                alt=""
+                className="h-10 w-10"
+              />
             </span>
             <div>
               <p className="font-display text-lg font-semibold leading-none text-navy-950">
