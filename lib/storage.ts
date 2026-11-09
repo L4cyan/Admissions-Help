@@ -65,8 +65,8 @@ async function readBlob(): Promise<KnowledgeBase | null> {
   }
 }
 
-export async function getKB(): Promise<KnowledgeBase> {
-  if (cache && Date.now() - cache.at < 4000) return cache.kb;
+export async function getKB(options: { fresh?: boolean } = {}): Promise<KnowledgeBase> {
+  if (!options.fresh && cache && Date.now() - cache.at < 4000) return cache.kb;
 
   let kb: KnowledgeBase | null = null;
   if (process.env.BLOB_READ_WRITE_TOKEN) {
@@ -136,7 +136,7 @@ export function isPublished(doc: KBDocument): boolean {
 }
 
 export async function addDocument(doc: KBDocument): Promise<KnowledgeBase> {
-  const kb = await getKB();
+  const kb = await getKB({ fresh: true });
   const duplicate = kb.documents.find(
     (existing) =>
       existing.text.trim() === doc.text.trim() &&
@@ -159,7 +159,7 @@ export async function updateDocument(
     Pick<KBDocument, "title" | "category" | "sourceUrl" | "text" | "status">
   >,
 ): Promise<KnowledgeBase> {
-  const kb = await getKB();
+  const kb = await getKB({ fresh: true });
   const existing = kb.documents.find((doc) => doc.id === id);
   if (!existing) throw new Error("Document not found.");
 
@@ -180,7 +180,7 @@ export async function updateDocument(
 }
 
 export async function removeDocument(id: string): Promise<KnowledgeBase> {
-  const kb = await getKB();
+  const kb = await getKB({ fresh: true });
   const next: KnowledgeBase = {
     ...kb,
     documents: kb.documents.filter((doc) => doc.id !== id),

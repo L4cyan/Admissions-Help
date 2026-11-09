@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const kb = await getKB();
+  const kb = await getKB({ fresh: true });
   const full = wantsFull;
   const gaps = admin ? await gapStats() : undefined;
 
@@ -173,7 +173,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Document id required." }, { status: 400 });
   }
 
-  const before = await getKB();
+  const before = await getKB({ fresh: true });
   if (!before.documents.some((doc) => doc.id === id)) {
     return NextResponse.json({ error: "Document not found." }, { status: 404 });
   }

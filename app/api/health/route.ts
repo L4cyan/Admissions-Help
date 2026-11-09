@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const kb = await getKB();
+  const kb = await getKB({ fresh: true });
   const chunks = buildChunks(kb);
   return NextResponse.json({
     ok: true,
