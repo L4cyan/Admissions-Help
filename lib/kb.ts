@@ -162,7 +162,7 @@ export function identityReply(staff: StaffProfile): string {
 }
 
 const SMALL_TALK =
-  /^(hi|hi po|hello|hello po|hey|good (morning|afternoon|evening)|kumusta|kamusta|musta|salamat|thank you|thanks|ok|okay|sure|yes|no|bye|goodbye|what can you do|help)\b/i;
+  /^(?:(?:hi|hello|hey|good (?:morning|afternoon|evening)|kumusta|kamusta|musta)(?:\s+po)?|salamat(?:\s+po)?|thank you(?:\s+po)?|thanks(?:\s+po)?|ok(?:ay)?(?:\s+po)?|sure(?:\s+po)?|yes(?:\s+po)?|no(?:\s+po)?|bye|goodbye|what can you do|help|(?:ok(?:ay)?|sure|yes|no)[,\s]+(?:thank you|thanks|salamat)(?:\s+po)?)[\s!.]*$/i;
 
 export function isSmallTalk(input: string): boolean {
   const text = input.trim();

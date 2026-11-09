@@ -107,12 +107,191 @@ const VOICE: Record<StaffId, { pitch: number; rate: number }> = {
   marilou: { pitch: 1.05, rate: 1 },
 };
 
-const DIRECTOR_NOTES: Partial<Record<StaffId, string>> = {
-  rose: "You've got this. Confirm the final details with us, ha?",
-  cris: "One step at a time. Confirm the deadline with the office.",
-  sherry: "You're doing fine. Bring your questions to the office anytime.",
-  marilou: "Take a breath. Your checklist is manageable.",
+type DirectorTopic =
+  | "cet"
+  | "score"
+  | "permit"
+  | "scholarship"
+  | "requirements"
+  | "enrollment"
+  | "programs"
+  | "fees"
+  | "contact"
+  | "professional"
+  | "unlisted"
+  | "general";
+
+const DIRECTOR_LEADS: Array<(name: string) => string> = [
+  (name) => `${name} is right.`,
+  (name) => `Keep ${name}'s answer close.`,
+  (name) => `${name} knows this side.`,
+  () => "Good question.",
+  () => "Here's the part to hold on to.",
+];
+
+const DIRECTOR_LINES: Record<DirectorTopic, string[]> = {
+  cet: [
+    "Follow the steps in order, and don't skip the portal screenshot.",
+    "The CET is easier when you prepare early; don't wait for the last week.",
+    "If the schedule is tight, ask the office about the next available date.",
+  ],
+  score: [
+    "The 30% is the university minimum, not a promise for a specific program.",
+    "If your target program is competitive, aim higher than the minimum.",
+    "Ask the office for the cutoff of your specific program.",
+  ],
+  permit: [
+    "The permit is the step people forget; do that before the exam date.",
+    "Bring the screenshot and your 2x2 photo when you get the permit.",
+    "Get the permit early so you're not rushing the day before.",
+  ],
+  scholarship: [
+    "Start with the form, then the documents; don't wait for the deadline.",
+    "Submit early so the office can tell you if something is missing.",
+    "Keep copies of everything you submit.",
+  ],
+  requirements: [
+    "Start with the originals, then the photocopies.",
+    "The checklist looks long, but it's mostly documents you already have.",
+    "Check the list twice before you visit the office.",
+  ],
+  enrollment: [
+    "Handle one checklist line at a time; it's manageable.",
+    "If you're a transferee, the honorable dismissal is the one to chase.",
+    "Do the requirements first, then the enrollment steps.",
+  ],
+  programs: [
+    "Tell me what you enjoy doing and I'll help you compare the fit.",
+    "Program fit matters more than the name; ask about the curriculum.",
+    "If you're choosing between two programs, ask what the first year looks like.",
+  ],
+  fees: [
+    "Use the Finance Office assessment for the exact amount.",
+    "Ask the Finance Office for the current fee sheet for your program.",
+    "Keep your payment receipt; you'll need it for enrollment.",
+  ],
+  contact: [
+    "If you're coming to the office, bring your questions and documents.",
+    "Call ahead if you're traveling from outside Zamboanga City.",
+    "We're at the Ground Floor of Bellarmine–Campion, Salvador Campus.",
+  ],
+  professional: [
+    "Law, Medicine, and Graduate School have separate admissions.",
+    "For professional schools, contact the school directly; the process is different.",
+    "These programs have their own requirements and timelines.",
+  ],
+  unlisted: [
+    "If a program isn't offered, don't force it; let's find the closest fit or another school.",
+    "It's okay to look at other universities for that program.",
+    "Tell me what you like about it and I'll suggest a related AdZU program.",
+  ],
+  general: [
+    "If anything above feels unclear, ask me and I'll slow it down.",
+    "You can ask a follow-up in plain language; no need to phrase it formally.",
+    "Tell me your situation and I'll help you sort the next step.",
+    "You don't have to figure it all out at once.",
+  ],
 };
+
+function pickNote<T>(items: T[], seed: string): T {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) | 0;
+  }
+  return items[Math.abs(hash) % items.length];
+}
+
+function directorTopic(text: string): DirectorTopic {
+  const value = text.toLowerCase();
+  if (
+    /not offered|not in (?:the|our|adzu).*(?:list|program)|mechanical engineering|architecture|chemical engineering|industrial engineering/.test(
+      value,
+    )
+  ) {
+    return "unlisted";
+  }
+  if (
+    /scholarship|scholar|grant|financial aid|stipend|allowance|blue eagle|asaa|renewal/.test(
+      value,
+    )
+  ) {
+    return "scholarship";
+  }
+  if (
+    /passing score|percentile|cut-?off|minimum score|cet score|admission score/.test(
+      value,
+    )
+  ) {
+    return "score";
+  }
+  if (/test permit|\bpermit\b|examinee|testing center/.test(value)) {
+    return "permit";
+  }
+  if (/\bcet\b|college entrance test|entrance exam|entrance test/.test(value)) {
+    return "cet";
+  }
+  if (
+    /requirement|form 138|good moral|honorable dismissal|transcript|birth certificate|2x2/.test(
+      value,
+    )
+  ) {
+    return "requirements";
+  }
+  if (/enroll|enrollment|shifting|transferee|freshman|freshmen/.test(value)) {
+    return "enrollment";
+  }
+  if (/tuition|fee|fees|payment|gcash|finance office/.test(value)) {
+    return "fees";
+  }
+  if (
+    /juris doctor|master of laws|\blaw\b|medicine|md-mph|graduate school|master|doctorate|phd/.test(
+      value,
+    )
+  ) {
+    return "professional";
+  }
+  if (
+    /program|course|degree|curriculum|engineering|nursing|accountancy|psychology|biology|mathematics|communication|education/.test(
+      value,
+    )
+  ) {
+    return "programs";
+  }
+  if (/office|address|contact|location|email|phone|campus/.test(value)) {
+    return "contact";
+  }
+  return "general";
+}
+
+function detailFromReply(reply: string): string | null {
+  const clean = reply.replace(/\[[^\]]*\]/g, " ");
+  const date = clean.match(
+    /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/,
+  );
+  if (date) return `Put ${date[0]} somewhere you'll see it.`;
+  const money = clean.match(/\bPHP\s?[\d,]+(?:\.\d{2})?\b/i);
+  if (money) return `Keep ${money[0]} handy for the office.`;
+  const email = clean.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/);
+  if (email) return `Save ${email[0]} before you close this chat.`;
+  const phone = clean.match(/(?:\+63|0)\d{3}[\s-]?\d{3}[\s-]?\d{4}/);
+  if (phone) return `Save ${phone[0]} in case you need to ask a follow-up.`;
+  return null;
+}
+
+function directorNote(
+  message: UIMessage,
+  prompt: string,
+  index: number,
+): string {
+  const topic = directorTopic(`${prompt}\n${message.content}`);
+  const seed = `${message.id}:${index}`;
+  const name = STAFF[message.staff].name;
+  const lead = pickNote(DIRECTOR_LEADS, `${seed}:lead`)(name);
+  const line =
+    detailFromReply(message.content) ??
+    pickNote(DIRECTOR_LINES[topic], `${seed}:line`);
+  return `${lead} ${line}`;
+}
 
 export function ChatExperience({
   initialQuery,
@@ -684,7 +863,14 @@ export function ChatExperience({
                               </span>
                               <p>
                                 <strong>Ma'am Jen:</strong>{" "}
-                                {DIRECTOR_NOTES[message.staff]}
+                                {directorNote(
+                                  message,
+                                  index > 0 &&
+                                    messages[index - 1].role === "user"
+                                    ? messages[index - 1].content
+                                    : "",
+                                  index,
+                                )}
                               </p>
                             </div>
                           )}

@@ -23,8 +23,8 @@ const FINANCE_URL = "https://adzu.edu.ph/about-us/finance-office/";
 const GCASH_URL = "https://adzu.edu.ph/adzu-is-now-on-gcash/";
 
 export const SEED_KB: KnowledgeBase = {
-  version: 2,
-  updatedAt: "2026-11-10T00:00:00.000Z",
+  version: 3,
+  updatedAt: "2026-11-10T01:00:00.000Z",
   documents: [
     {
       id: "admissions-how-to-apply-cet",
@@ -82,6 +82,22 @@ The College Admissions & Aid Office facilitates enrollment of new students, firs
 An October 24, 2026 announcement from the official Ateneo de Zamboanga University Facebook page listed the AdZU CET for School Year 2027–2028 on November 14, 2026 at the Salvador Campus, with online application through https://admissions.host.adzu.edu.ph/.
 
 CET dates, testing centers, and application deadlines can change. Always confirm the latest schedule with the College Admissions & Aid Office or the online application portal before paying or traveling. If you miss a scheduled date, ask the office about the next available CET.`,
+    },
+    {
+      id: "admissions-cet-passing-score",
+      title: "CET passing score and admission percentile",
+      category: "admissions",
+      sourceUrl:
+        "https://adzu.edu.ph/wp-content/uploads/2026/02/ADZU-COLLEGE-STUDENT-HANDBOOK-2025.pdf",
+      sourceType: "official-pdf",
+      addedAt: PROGRAMS_CHECKED,
+      text: `AdZU's College Student Handbook (2025–2026 edition) says admission for all courses is determined principally by the results of the College Entrance Test (CET).
+
+The minimum percentile rank for admission to the University is 30% or higher. Admission requirements are not the same for all degree programs. A student who qualifies for one program may not be admitted into another if the other program has higher requirements.
+
+Board programs and programs with licensure examinations, as well as Nursing, may require higher CET percentile rankings. Nursing applicants must also be physically and mentally fit.
+
+The CET result is not the only admission factor, and the university may set higher standards for a specific program. For the exact cutoff for your target program, confirm with the College Admissions & Aid Office.`,
     },
     {
       id: "admissions-test-permit",
