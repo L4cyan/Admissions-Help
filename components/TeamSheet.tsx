@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { ArrowRight, X } from "lucide-react";
-import { Chibi } from "./Chibi";
 import { InstallButton } from "./InstallButton";
+import { PokeChibi } from "./PokeChibi";
 import { STAFF_LIST } from "@/lib/staff";
 import type { StaffId } from "@/lib/types";
 
@@ -17,27 +17,72 @@ export function TeamSheet({
   onAsk: (question: string, staff: StaffId) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
+    const trigger =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    triggerRef.current = trigger;
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const root = sheetRef.current;
+      if (!root) return;
+      const focusable = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getClientRects().length > 0);
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey) {
+        if (active === first || !root.contains(active)) {
+          event.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !root.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", onKey);
+
+    document.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey);
+      triggerRef.current?.focus({ preventScroll: true });
+      triggerRef.current = null;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
   return (
     <div className="team-backdrop" onMouseDown={onClose}>
       <section
+        ref={sheetRef}
         className="team-sheet"
         role="dialog"
         aria-modal="true"
@@ -68,7 +113,7 @@ export function TeamSheet({
           {STAFF_LIST.map((person) => (
             <article key={person.id} className={`team-card team-card-${person.id}`}>
               <div className="team-card-art" style={{ background: person.soft }}>
-                <Chibi variant={person.chibi} className="h-auto w-full" />
+                <PokeChibi variant={person.chibi} className="team-card-poke" />
               </div>
               <div className="team-card-body">
                 <p className="team-card-name">{person.name}</p>

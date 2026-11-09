@@ -150,8 +150,19 @@ export function buildContext(chunks: Chunk[]): string {
     .join("\n\n");
 }
 
+const IDENTITY =
+  /\b(who are you|who r u|who am i (?:talking|speaking|chatting) (?:to|with)|what are you|(?:are you|is this|is it|is there) (?:a |an |the )?(?:real |actual )?(?:person|human|ai|bot|chatbot|robot)\b|are you (?:the )?real\b|is this (?:the )?real\b|(?:am i|are we) (?:talking|speaking|chatting) (?:to|with) (?:a |an |the )?(?:real |actual )?(?:person|human|ai|bot|chatbot|robot)\b|(?:talk|speak|chat) (?:to|with) (?:a |an |the )?(?:real |actual )?(?:person|human|staff)\b|real (?:person|human|ma'am|maam|sir|staff|office|teacher|director|jen|rose|cris|sherry|marilou)|human or (?:ai|bot)|(?:ai|bot) or human)\b/i;
+
+export function isIdentityQuestion(input: string): boolean {
+  return IDENTITY.test(input.trim());
+}
+
+export function identityReply(staff: StaffProfile): string {
+  return `I'm the chibi guide for ${staff.name} — an AI helper, not a real person. The real ${staff.name} works at the Admissions & Aid Office. I answer from the office's official notes and cannot speak for the university or decide your case. For a decision on your own concern, ${OFFICE_CONTACT}`;
+}
+
 const SMALL_TALK =
-  /^(hi|hi po|hello|hello po|hey|good (morning|afternoon|evening)|kumusta|kamusta|musta|salamat|thank you|thanks|ok|okay|sure|yes|no|bye|goodbye|who are you|what can you do|help)\b/i;
+  /^(hi|hi po|hello|hello po|hey|good (morning|afternoon|evening)|kumusta|kamusta|musta|salamat|thank you|thanks|ok|okay|sure|yes|no|bye|goodbye|what can you do|help)\b/i;
 
 export function isSmallTalk(input: string): boolean {
   const text = input.trim();
@@ -160,9 +171,9 @@ export function isSmallTalk(input: string): boolean {
 
 export function smallTalkReply(staff: StaffProfile): string {
   if (staff.id === "director") {
-    return "Hi, future Atenista! I'm Ma'am Jen's chibi guide. Ask me anything about AdZU college admissions or scholarships — I'll bring in the right person from the office. What do you need help with?";
+    return "Hi, future Atenista! I'm Ma'am Jen. Ask me anything about AdZU college admissions or scholarships — I'll bring in the right person from the office. What do you need help with?";
   }
-  return `Hi! I'm ${staff.name}'s chibi guide. I can help with ${staff.handles
+  return `Hi! I'm ${staff.name}. I can help with ${staff.handles
     .slice(0, 3)
     .map((item) => item.toLowerCase())
     .join(", ")}. What do you need?`;

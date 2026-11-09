@@ -296,7 +296,7 @@ Confirm:
 | Admin says "read-only deployment" | No `BLOB_READ_WRITE_TOKEN` in the Vercel environment. Connect a Blob store and redeploy. |
 | Uploads work locally but not on Vercel | Local writes go to `data/kb.json`, which is not deployed. Connect Blob and re-add the documents through production `/admin`. Alternatively, edit `data/seed.ts` and redeploy. |
 | Answers always say "quoted notes" / no AI | No provider key is set, or all providers failed or were rate-limited. Pollinations' anonymous tier allows roughly one reply per 45 seconds per IP. Check `/api/health` provider flags and Vercel function logs for `[chat] <provider> failed`. Add a free Gemini key for a reliable public default. |
-| 504 / function timeout | The route caps the whole answer at about 30 seconds and the platform function at 60. If several providers are slow, the notes fallback runs before the cap. Remove unused keys, use a faster provider, or increase `maxDuration` if your plan allows. |
+| 504 / function timeout | The route caps the whole answer at about 40 seconds and the platform function at 60. If several providers are slow, the notes fallback runs before the cap. Remove unused keys, use a faster provider, or increase `maxDuration` if your plan allows. |
 | 413 Payload Too Large | File exceeds the app's 4 MB cap or Vercel's ~4.5 MB body limit. Split the file or paste the relevant text. |
 | Scanned PDF rejected | It has no selectable text. Upload page images so browser OCR can extract text, or paste the text. |
 | Image OCR does not start / takes long | Tesseract.js runs in the browser and downloads its engine and English language data on first use. Check the user's network and try a clearer image. |

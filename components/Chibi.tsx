@@ -6,11 +6,10 @@ export type { ChibiVariant } from "@/lib/types";
 type HairStyle =
   | "longStraight"
   | "longBangs"
+  | "hime"
   | "tiedBack"
   | "shortWavy"
   | "longSide";
-type OutfitStyle = "blazer" | "blouse" | "vneck" | "polo";
-
 interface Look {
   skin: string;
   skinShade: string;
@@ -28,9 +27,10 @@ interface Look {
   collar: string;
   accent: string;
   style: HairStyle;
-  outfitStyle: OutfitStyle;
+  build: "slim" | "regular" | "curvy";
   earrings: "pearl" | "gold" | "none";
   glasses: boolean;
+  glassesFrame: string;
   mature: boolean;
   chubby: boolean;
   ponytail: boolean;
@@ -69,15 +69,16 @@ const LOOKS: Record<ChibiVariant, Look> = {
     eyeLight: "#b07a4a",
     brow: "#4a2e20",
     lip: "#b45b57",
-    outfit: "#202027",
-    outfitShade: "#111116",
-    outfitLight: "#34343d",
-    collar: "#f7f0e4",
+    outfit: "#1d355e",
+    outfitShade: "#142643",
+    outfitLight: "#2c4b7c",
+    collar: "#f8f4ea",
     accent: "#c99a2e",
     style: "longStraight",
-    outfitStyle: "blazer",
+    build: "slim",
     earrings: "pearl",
-    glasses: false,
+    glasses: true,
+    glassesFrame: "#5a4636",
     mature: true,
     chubby: false,
     ponytail: false,
@@ -93,15 +94,16 @@ const LOOKS: Record<ChibiVariant, Look> = {
     eyeLight: "#8d5b38",
     brow: "#1b1312",
     lip: "#b85f5a",
-    outfit: "#cfe2ee",
-    outfitShade: "#a9c7d9",
-    outfitLight: "#eaf4fa",
-    collar: "#fbf8f0",
-    accent: "#b8861f",
-    style: "longBangs",
-    outfitStyle: "blouse",
+    outfit: "#1d355e",
+    outfitShade: "#142643",
+    outfitLight: "#2c4b7c",
+    collar: "#f8f4ea",
+    accent: "#c99a2e",
+    style: "hime",
+    build: "regular",
     earrings: "gold",
     glasses: false,
+    glassesFrame: "#8a6824",
     mature: false,
     chubby: false,
     ponytail: false,
@@ -117,15 +119,16 @@ const LOOKS: Record<ChibiVariant, Look> = {
     eyeLight: "#815233",
     brow: "#1b1312",
     lip: "#a95350",
-    outfit: "#24385f",
-    outfitShade: "#182744",
-    outfitLight: "#36527f",
-    collar: "#f8f3e8",
-    accent: "#b8861f",
+    outfit: "#1d355e",
+    outfitShade: "#142643",
+    outfitLight: "#2c4b7c",
+    collar: "#f8f4ea",
+    accent: "#c99a2e",
     style: "tiedBack",
-    outfitStyle: "vneck",
+    build: "regular",
     earrings: "gold",
     glasses: false,
+    glassesFrame: "#8a6824",
     mature: true,
     chubby: false,
     ponytail: true,
@@ -147,9 +150,10 @@ const LOOKS: Record<ChibiVariant, Look> = {
     collar: "#f8f4ea",
     accent: "#c99a2e",
     style: "shortWavy",
-    outfitStyle: "polo",
+    build: "regular",
     earrings: "none",
     glasses: true,
+    glassesFrame: "#8a6824",
     mature: false,
     chubby: false,
     ponytail: false,
@@ -171,10 +175,11 @@ const LOOKS: Record<ChibiVariant, Look> = {
     collar: "#f8f4ea",
     accent: "#c99a2e",
     style: "longSide",
-    outfitStyle: "polo",
+    build: "curvy",
     earrings: "gold",
-    glasses: false,
-    mature: false,
+    glasses: true,
+    glassesFrame: "#6b4a2f",
+    mature: true,
     chubby: true,
     ponytail: false,
   },
@@ -247,8 +252,8 @@ const FEATURES: Record<ChibiVariant, Features> = {
     earY: 168,
     eyeY: 174,
     eyeSpread: 38,
-    eyeScaleX: 1.05,
-    eyeScaleY: 1.02,
+    eyeScaleX: 0.98,
+    eyeScaleY: 0.92,
     browLift: 35,
     browArch: 6,
     browWidth: 23,
@@ -283,47 +288,93 @@ const FEATURES: Record<ChibiVariant, Features> = {
   },
 };
 
+/**
+ * One continuous long-hair mass behind the head and shoulders. The split at
+ * the bottom is only for the body; it is not two tails.
+ */
+const LONG_BACK =
+  "M160 24C100 24 58 72 56 138L52 330C52 350 76 360 98 350C130 336 146 306 150 268L170 268C174 306 190 336 222 350C244 360 268 350 268 330L264 138C262 72 220 24 160 24Z";
+
 const HAIR_BACK: Record<HairStyle, string> = {
-  longStraight:
-    "M160 26C101 26 62 70 60 134L56 304C56 326 76 340 96 330L102 238C102 188 120 152 160 152C200 152 218 188 218 238L224 330C244 340 264 326 264 304L260 134C258 70 219 26 160 26Z",
-  longBangs:
-    "M160 24C98 24 58 72 56 138L52 314C52 336 72 348 92 338L98 240C98 188 118 152 160 152C202 152 222 188 222 240L228 338C248 348 268 336 268 314L264 138C262 72 222 24 160 24Z",
+  longStraight: LONG_BACK,
+  longBangs: LONG_BACK,
+  hime: LONG_BACK,
+  // Ma'am Cris: hair pulled straight back. Asymmetric nape so the single low
+  // bun reads on one side instead of a pair of side masses.
   tiedBack:
-    "M160 30C108 30 72 70 70 132L68 214C68 234 84 244 100 236L106 192C106 160 120 140 160 140C200 140 214 160 214 192L220 236C236 244 252 234 252 214L250 132C248 70 212 30 160 30Z",
+    "M160 30C104 30 66 72 64 140C62 168 63 188 66 200C69 210 82 214 92 208C100 203 106 192 110 182C116 170 136 160 160 160C184 160 202 172 208 190C212 206 214 224 222 236C230 248 246 246 250 232C256 210 258 176 256 140C254 72 216 30 160 30Z",
   shortWavy:
     "M160 32C108 32 72 70 70 132L68 204C68 230 84 246 102 240C100 230 100 220 104 212C108 224 118 230 128 228C126 218 126 210 128 204C130 194 136 184 146 178C154 172 166 172 174 178C184 184 190 194 192 204C194 210 194 218 192 228C202 230 212 224 216 212C220 220 220 230 218 240C236 246 252 230 252 204L250 132C248 70 212 32 160 32Z",
-  longSide:
-    "M160 26C103 26 64 70 62 134L58 306C58 328 78 342 98 332L104 240C104 188 122 152 160 152C198 152 216 188 216 240L222 332C242 342 262 328 262 306L258 134C256 70 217 26 160 26Z",
+  longSide: LONG_BACK,
 };
 
 const HAIR_FRONT: Record<HairStyle, string> = {
+  // Ma'am Jen: soft side-swept fringe, long brown hair. The outer edge runs
+  // wider than the head so it covers the face stroke at the crown.
   longStraight:
-    "M160 46C124 48 98 64 88 96C82 118 84 148 92 172C94 146 100 122 112 106C122 94 136 88 150 94C154 108 156 124 152 140C148 156 140 168 132 178C144 160 154 140 158 122C160 116 160 112 160 110C160 112 160 116 162 122C166 140 176 160 188 178C180 168 172 156 168 140C164 124 166 108 170 94C184 88 198 94 208 106C220 122 226 146 228 172C236 148 238 118 232 96C222 64 196 48 160 46Z",
+    "M72 158C74 94 112 42 160 42C208 42 246 94 248 158C244 150 238 136 228 124C214 128 200 132 184 134C164 136 146 130 132 120C120 130 100 144 72 158Z",
   longBangs:
-    "M78 138C80 84 114 50 160 50C206 50 240 84 242 138C230 126 222 112 216 96C204 114 188 126 168 128C150 130 132 124 118 112C112 124 96 132 78 138Z",
+    "M72 158C74 94 112 42 160 42C208 42 246 94 248 158C238 142 230 120 216 98C204 116 188 128 168 130C150 132 132 126 118 114C110 128 94 142 72 158Z",
+  // Ma'am Rose: hime cut — blunt fringe, short straight cheek locks.
+  hime: "M72 158C74 94 112 42 160 42C208 42 246 94 248 158C238 142 230 126 216 100L216 130Q216 134 212 134L108 134Q104 134 104 130L104 100C96 116 88 136 72 158Z",
+  // Ma'am Cris: solid pulled-back cap with a lower, slightly asymmetric
+  // hairline. No thin band, no bare skin arc at the crown.
   tiedBack:
-    "M80 154C84 100 116 56 160 56C204 56 236 100 240 154C230 140 222 128 212 118C200 108 182 102 160 102C138 102 120 110 108 120C98 128 90 142 80 154Z",
+    "M70 168C72 96 112 42 160 42C208 42 248 96 250 168C240 150 230 134 216 122C202 112 186 108 170 110C154 112 140 116 126 124C112 134 88 152 70 168Z",
   shortWavy:
-    "M78 140C80 86 114 50 160 50C206 50 240 86 242 140C232 126 224 112 218 98C208 114 194 126 176 130C158 134 140 128 126 114C118 126 96 132 78 140Z",
+    "M72 156C74 94 112 42 160 42C208 42 246 94 248 156C238 148 232 138 228 128C216 132 202 136 184 138C166 140 148 134 134 124C122 134 102 146 72 156Z",
+  // Ma'am Marilou: long side-parted hair. Outer edge overlaps the head and
+  // back-hair mass at the temples so no skin wedge shows through.
   longSide:
-    "M76 146C78 88 112 50 160 50C208 50 242 88 244 146C232 126 216 110 196 104C176 98 154 102 136 112C120 120 106 132 96 146C90 136 84 138 76 146Z",
+    "M58 188C60 120 80 80 116 58C132 46 148 42 162 44C214 46 254 94 262 188C254 164 250 146 238 128C222 104 198 96 176 102C154 108 130 118 110 128C94 138 74 162 58 188Z",
+};
+
+/**
+ * The lower edge of each front-hair piece. Stroking only this edge keeps the
+ * fringe crisp without painting a second "headband" line across the crown
+ * where the front piece overlaps the larger back-hair mass.
+ */
+const HAIRLINE: Record<HairStyle, string> = {
+  longStraight:
+    "M248 158C244 150 238 136 228 124C214 128 200 132 184 134C164 136 146 130 132 120C120 130 100 144 72 158",
+  longBangs:
+    "M248 158C238 142 230 120 216 98C204 116 188 128 168 130C150 132 132 126 118 114C110 128 94 142 72 158",
+  hime: "M248 158C238 142 230 126 216 100L216 130Q216 134 212 134L108 134Q104 134 104 130L104 100C96 116 88 136 72 158",
+  tiedBack:
+    "M250 168C240 150 230 134 216 122C202 112 186 108 170 110C154 112 140 116 126 124C112 134 88 152 70 168",
+  shortWavy:
+    "M248 156C238 148 232 138 228 128C216 132 202 136 184 138C166 140 148 134 134 124C122 134 102 146 72 156",
+  longSide:
+    "M262 188C254 164 250 146 238 128C222 104 198 96 176 102C154 108 130 118 110 128C94 138 74 162 58 188",
 };
 
 const SIDE_L: Record<HairStyle, string | null> = {
-  longStraight: "M88 118C82 160 84 212 92 252C98 230 94 188 100 156Z",
-  longBangs: "M80 126C74 166 76 218 86 256C92 232 86 190 94 158Z",
+  longStraight: null,
+  longBangs: null,
+  hime: null,
   tiedBack: null,
-  shortWavy: "M78 128C70 154 72 186 82 212C88 194 82 164 90 142Z",
-  longSide: "M82 124C74 164 76 220 86 258C92 232 86 188 96 154Z",
+  shortWavy: "M102 118C82 140 70 170 76 208C80 219 87 218 90 207C86 186 92 152 112 134Z",
+  longSide: null,
 };
 
 const SIDE_R: Record<HairStyle, string | null> = {
-  longStraight: "M232 118C238 160 236 212 228 252C222 230 226 188 220 156Z",
-  longBangs: "M240 126C246 166 244 218 234 256C228 232 234 190 226 158Z",
+  longStraight: null,
+  longBangs: null,
+  hime: null,
   tiedBack: null,
-  shortWavy: "M242 128C250 154 248 186 238 212C232 194 238 164 230 142Z",
-  longSide: "M238 124C246 164 244 220 234 258C228 232 234 188 224 154Z",
+  shortWavy: "M218 118C238 140 250 170 244 208C240 219 233 218 230 207C234 186 228 152 208 134Z",
+  longSide: null,
 };
+
+function bodyPath(build: Look["build"]): string {
+  if (build === "slim") {
+    return "M72 360C74 322 98 296 132 282L160 298L188 282C222 296 246 322 248 360Z";
+  }
+  if (build === "curvy") {
+    return "M50 360C52 314 82 286 124 274L160 294L196 274C238 286 268 314 270 360Z";
+  }
+  return "M60 360C62 318 90 290 128 278L160 296L192 278C230 290 258 318 260 360Z";
+}
 
 export function Chibi({
   variant,
@@ -340,6 +391,7 @@ export function Chibi({
 }) {
   const look = LOOKS[variant];
   const f = FEATURES[variant];
+  const body = bodyPath(look.build);
   const uid = `chibi-${variant}`;
   const label = title ?? `${variant} chibi guide`;
 
@@ -357,12 +409,26 @@ export function Chibi({
           <stop offset="48%" stopColor={look.skin} />
           <stop offset="100%" stopColor={look.skinShade} />
         </linearGradient>
-        <linearGradient id={`${uid}-hair`} x1="0.2" y1="0" x2="0.8" y2="1">
+        <linearGradient
+          id={`${uid}-hair`}
+          gradientUnits="userSpaceOnUse"
+          x1="64"
+          y1="24"
+          x2="256"
+          y2="340"
+        >
           <stop offset="0%" stopColor={look.hairLight} />
           <stop offset="38%" stopColor={look.hair} />
           <stop offset="100%" stopColor={look.hairDark} />
         </linearGradient>
-        <linearGradient id={`${uid}-outfit`} x1="0" y1="0" x2="0.4" y2="1">
+        <linearGradient
+          id={`${uid}-outfit`}
+          gradientUnits="userSpaceOnUse"
+          x1="64"
+          y1="260"
+          x2="240"
+          y2="360"
+        >
           <stop offset="0%" stopColor={look.outfitLight} />
           <stop offset="40%" stopColor={look.outfit} />
           <stop offset="100%" stopColor={look.outfitShade} />
@@ -382,7 +448,7 @@ export function Chibi({
           <stop offset="100%" stopColor="#cdbfa9" />
         </linearGradient>
         <clipPath id={`${uid}-body-clip`}>
-          <path d="M60 360C62 318 90 290 128 278L160 296L192 278C230 290 258 318 260 360Z" />
+          <path d={body} />
         </clipPath>
       </defs>
 
@@ -398,43 +464,55 @@ export function Chibi({
         {look.ponytail && (
           <g className="chibi-bun">
             <ellipse
-              cx="238"
-              cy="222"
-              rx="28"
-              ry="24"
+              cx="234"
+              cy="250"
+              rx="23"
+              ry="19"
               fill={`url(#${uid}-hair)`}
               stroke={look.hairDark}
               strokeWidth="3"
             />
             <path
-              d="M218 216c8-11 26-13 36-3M220 228c10-6 24-6 32 0"
+              d="M218 244c6-8 20-10 28-3M220 256c8-4 18-4 24 0"
               fill="none"
               stroke={look.hairLight}
-              strokeWidth="2.2"
+              strokeWidth="2"
               strokeLinecap="round"
-              opacity="0.55"
+              opacity="0.5"
             />
             <rect
-              x="224"
-              y="202"
-              width="18"
-              height="9"
+              x="220"
+              y="233"
+              width="16"
+              height="8"
               rx="4"
               fill={look.accent}
               stroke="#7a5a1e"
-              strokeWidth="1.6"
+              strokeWidth="1.5"
             />
           </g>
         )}
 
+        {/* solid scalp under the face — no skin gaps between hair pieces */}
+        <ellipse
+          cx="160"
+          cy={f.chubby ? 142 : 136}
+          rx={f.chubby ? 102 : 94}
+          ry={f.chubby ? 108 : 102}
+          fill={look.hair}
+        />
+
         <path
-          d="M60 360C62 318 90 290 128 278L160 296L192 278C230 290 258 318 260 360Z"
+          d={body}
           fill={`url(#${uid}-outfit)`}
           stroke="#2a1d18"
           strokeWidth="3.2"
           strokeLinejoin="round"
         />
         <g clipPath={`url(#${uid}-body-clip)`}>
+          {/* Opaque navy chest panel: no background can show through the
+              neckline on tinted cards. */}
+          <path d="M88 268H232V360H88Z" fill={`url(#${uid}-outfit)`} />
           <path
             d="M176 284C210 296 236 318 246 360L260 360C258 318 230 290 192 278Z"
             fill="#ffffff"
@@ -450,6 +528,13 @@ export function Chibi({
           />
         </g>
 
+        {/* navy plug behind the throat so the neckline gap never exposes the
+            page/team-card color */}
+        <path
+          d="M132 270C142 278 178 278 188 270L202 322H118Z"
+          fill={look.outfit}
+        />
+
         <path
           d="M140 236L140 276C146 286 174 286 180 276L180 236Z"
           fill={`url(#${uid}-skin)`}
@@ -462,7 +547,7 @@ export function Chibi({
           opacity="0.55"
         />
 
-        <Clothing look={look} uid={uid} />
+        <Clothing look={look} />
 
         <ellipse
           cx={f.earX}
@@ -529,13 +614,35 @@ export function Chibi({
 
           <Face look={look} f={f} uid={uid} speaking={speaking} variant={variant} />
 
-          <path
-            d={HAIR_FRONT[look.style]}
-            fill={`url(#${uid}-hair)`}
-            stroke={look.hairDark}
-            strokeWidth="3"
-            strokeLinejoin="round"
-          />
+          {look.earrings !== "none" && <Earrings look={look} uid={uid} f={f} />}
+
+          {look.style === "hime" && (
+            <g>
+              <path
+                d="M66 112C64 140 65 168 69 186C72 199 77 207 83 203C87 200 87 194 85 186C82 170 83 140 82 112Z"
+                fill={`url(#${uid}-hair)`}
+              />
+              <path
+                d="M254 112C256 140 255 168 251 186C248 199 243 207 237 203C233 200 233 194 235 186C238 170 237 140 238 112Z"
+                fill={`url(#${uid}-hair)`}
+              />
+              <path
+                d="M82 118C81 142 81 168 83 186C85 194 85 200 81 203M238 118C239 142 239 168 237 186C235 194 235 200 239 203"
+                fill="none"
+                stroke={look.hairDark}
+                strokeWidth="2.8"
+                strokeLinecap="round"
+              />
+              <path
+                d="M67 140C66 160 66 176 69 186C72 199 77 207 81 203M253 140C254 160 254 176 251 186C248 199 243 207 239 203"
+                fill="none"
+                stroke={look.hairDark}
+                strokeWidth="2.8"
+                strokeLinecap="round"
+              />
+            </g>
+          )}
+
           {SIDE_L[look.style] && (
             <path
               className="chibi-hair-side"
@@ -557,10 +664,21 @@ export function Chibi({
             />
           )}
 
+          <path
+            d={HAIR_FRONT[look.style]}
+            fill={`url(#${uid}-hair)`}
+          />
+          <path
+            d={HAIRLINE[look.style]}
+            fill="none"
+            stroke={look.hairDark}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           <HairDetails look={look} variant={variant} />
 
-          {look.earrings !== "none" && <Earrings look={look} uid={uid} f={f} />}
-          {look.glasses && <Glasses look={look} />}
+          {look.glasses && <Glasses look={look} f={f} />}
         </g>
       </g>
     </svg>
@@ -612,20 +730,12 @@ function Face({
         <g
           fill="none"
           stroke={look.skinShade}
-          strokeWidth="1.5"
+          strokeWidth="1.4"
           strokeLinecap="round"
-          opacity="0.58"
+          opacity="0.35"
         >
-          <path d={`M${leftX - 18} ${f.eyeY + 18}c5 3 11 3 16 0`} />
-          <path d={`M${rightX + 18} ${f.eyeY + 18}c-5 3 -11 3 -16 0`} />
-          <path d={`M${leftX - 28} ${f.eyeY + 31}c-3 6 -3 11 0 16`} />
-          <path d={`M${rightX + 28} ${f.eyeY + 31}c3 6 3 11 0 16`} />
-          <path d={`M${leftX - 24} ${f.eyeY - 1}l-6 -4`} />
-          <path d={`M${leftX - 25} ${f.eyeY + 4}l-6 1`} />
-          <path d={`M${rightX + 24} ${f.eyeY - 1}l6 -4`} />
-          <path d={`M${rightX + 25} ${f.eyeY + 4}l6 1`} />
-          <path d={`M${leftX + 8} ${f.noseY + 3}c-3 8 -2 14 2 18`} opacity="0.7" />
-          <path d={`M${rightX - 8} ${f.noseY + 3}c3 8 2 14 -2 18`} opacity="0.7" />
+          <path d={`M${leftX + 10} ${f.noseY + 6}c-2 4 -2 8 0 12`} />
+          <path d={`M${rightX - 10} ${f.noseY + 6}c2 4 2 8 0 12`} />
         </g>
       )}
 
@@ -668,10 +778,7 @@ function Face({
         opacity={f.blush}
       />
 
-      <g
-        className={`chibi-mouth ${speaking ? "is-talking" : ""}`}
-        style={{ transformOrigin: `160px ${f.mouthY + 8}px` }}
-      >
+      <g className={`chibi-mouth ${speaking ? "is-talking" : ""}`}>
         <path
           d={mouthPath(variant, speaking)}
           fill={look.lip}
@@ -681,21 +788,13 @@ function Face({
           transform={`translate(160 ${f.mouthY}) scale(${f.mouthScale} 1) translate(-160 -${f.mouthY})`}
         />
         <path
-          d={mouthTeethPath(variant, speaking)}
-          fill="#fff8f2"
-          opacity="0.92"
-          transform={`translate(160 ${f.mouthY}) scale(${f.mouthScale} 1) translate(-160 -${f.mouthY})`}
+          d={`M154 ${f.mouthY + 10}c4 2 8 2 12 0`}
+          fill="none"
+          stroke="#743b36"
+          strokeWidth="1.1"
+          strokeLinecap="round"
+          opacity="0.25"
         />
-        {variant !== "cris" && (
-          <path
-            d={`M156 ${f.mouthY + 12}c3 3 7 3 10 0`}
-            fill="none"
-            stroke="#743b36"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            opacity="0.4"
-          />
-        )}
       </g>
 
       {f.chubby && (
@@ -706,7 +805,7 @@ function Face({
             rx="22"
             ry="13"
             fill={look.skinShade}
-            opacity="0.1"
+            opacity="0.14"
           />
           <ellipse
             cx="222"
@@ -714,7 +813,7 @@ function Face({
             rx="22"
             ry="13"
             fill={look.skinShade}
-            opacity="0.1"
+            opacity="0.14"
           />
           <path
             d="M136 250c10 6 38 6 48 0"
@@ -738,48 +837,31 @@ function Face({
   );
 }
 
-const MOUTHS: Record<ChibiVariant, { smile: string; talk: string; teeth: string }> = {
+const MOUTHS: Record<ChibiVariant, { smile: string; talk: string }> = {
   director: {
-    smile:
-      "M146 218c7 14 21 14 28 0c-3 2-8 3-14 3s-11-1-14-3Z",
-    talk:
-      "M144 216c9 22 23 22 32 0c-2 18-11 25-16 25s-14-7-16-25Z",
-    teeth: "M151 220c5 3 13 3 18 0c-2 6-5 9-9 9s-7-3-9-9Z",
+    smile: "M147 219c8 7 18 7 26 0c-3 2-8 3-13 3s-10-1-13-3Z",
+    talk: "M148 219c8 12 16 12 24 0c-2 9-7 13-12 13s-10-4-12-13Z",
   },
   rose: {
-    smile:
-      "M150 221c5 9 15 9 20 0c-2 2-6 3-10 3s-8-1-10-3Z",
-    talk:
-      "M148 219c7 16 17 16 24 0c-2 13-8 18-12 18s-10-5-12-18Z",
-    teeth: "M153 222c4 2 10 2 14 0c-2 5-4 7-7 7s-5-2-7-7Z",
+    smile: "M150 221c6 6 14 6 20 0c-2 2-6 3-10 3s-8-1-10-3Z",
+    talk: "M150 220c6 9 14 9 20 0c-2 7-5 10-10 10s-8-3-10-10Z",
   },
   cris: {
-    smile: "M149 221c6 6 16 6 22 0",
-    talk:
-      "M147 219c7 14 19 14 26 0c-2 12-8 17-13 17s-11-5-13-17Z",
-    teeth: "M154 222c4 2 8 2 12 0c-1 4-3 6-6 6s-5-2-6-6Z",
+    smile: "M150 221c6 4 14 4 20 0c-2 2-6 3-10 3s-8-1-10-3Z",
+    talk: "M151 220c6 8 12 8 18 0c-2 6-5 9-9 9s-7-3-9-9Z",
   },
   sherry: {
-    smile:
-      "M144 217c9 17 23 17 32 0c-3 2-9 4-16 4s-13-2-16-4Z",
-    talk:
-      "M142 215c10 24 26 24 36 0c-2 20-12 27-18 27s-16-7-18-27Z",
-    teeth: "M150 219c6 3 14 3 20 0c-2 7-6 10-10 10s-8-3-10-10Z",
+    smile: "M146 218c9 8 19 8 28 0c-3 2-9 4-14 4s-11-2-14-4Z",
+    talk: "M146 218c9 13 19 13 28 0c-2 10-8 14-14 14s-12-4-14-14Z",
   },
   marilou: {
-    smile:
-      "M143 219c10 18 24 18 34 0c-3 2-9 4-17 4s-14-2-17-4Z",
-    talk:
-      "M141 217c11 25 27 25 38 0c-2 20-12 28-19 28s-17-8-19-28Z",
-    teeth: "M150 221c6 3 14 3 20 0c-2 7-6 10-10 10s-8-3-10-10Z",
+    smile: "M146 220c9 8 19 8 28 0c-3 2-9 4-14 4s-11-2-14-4Z",
+    talk: "M146 220c9 13 19 13 28 0c-2 10-8 14-14 14s-12-4-14-14Z",
   },
 };
 
 function mouthPath(variant: ChibiVariant, speaking: boolean) {
   return speaking ? MOUTHS[variant].talk : MOUTHS[variant].smile;
-}
-function mouthTeethPath(variant: ChibiVariant, speaking: boolean) {
-  return speaking ? MOUTHS[variant].teeth : "";
 }
 
 const EYE_SHAPES: Record<
@@ -928,35 +1010,59 @@ function Earrings({ look, uid, f }: { look: Look; uid: string; f: Features }) {
   );
 }
 
-function Glasses({ look }: { look: Look }) {
+function Glasses({ look, f }: { look: Look; f: Features }) {
+  const left = 160 - f.eyeSpread;
+  const right = 160 + f.eyeSpread;
+  const width = f.chubby ? 50 : 46;
+  const height = 36;
+  const y = f.eyeY - 18;
+  const frame = look.glassesFrame;
+
   return (
     <g className="chibi-glasses">
       <rect
-        x="106"
-        y="161"
-        width="39"
-        height="28"
+        x={left - width / 2}
+        y={y}
+        width={width}
+        height={height}
         rx="9"
         fill="#dcebf3"
-        fillOpacity="0.14"
-        stroke="#8a6824"
+        fillOpacity="0.12"
+        stroke={frame}
         strokeWidth="2.5"
       />
       <rect
-        x="175"
-        y="161"
-        width="39"
-        height="28"
+        x={right - width / 2}
+        y={y}
+        width={width}
+        height={height}
         rx="9"
         fill="#dcebf3"
-        fillOpacity="0.14"
-        stroke="#8a6824"
+        fillOpacity="0.12"
+        stroke={frame}
         strokeWidth="2.5"
       />
-      <path d="M145 172h30" fill="none" stroke="#8a6824" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M106 169l-14 -4M214 169l14 -4" fill="none" stroke="#8a6824" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M113 183l8 -14" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" opacity="0.28" />
-      <path d="M182 183l8 -14" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" opacity="0.28" />
+      <path
+        d={`M${left + width / 2} ${y + 12}H${right - width / 2}`}
+        fill="none"
+        stroke={frame}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M${left - width / 2} ${y + 8}l-14 -4M${right + width / 2} ${y + 8}l14 -4`}
+        fill="none"
+        stroke={frame}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M${left - width / 2 + 7} ${y + 22}l8 -14M${right - width / 2 + 7} ${y + 22}l8 -14`}
+        stroke="#ffffff"
+        strokeWidth="3.4"
+        strokeLinecap="round"
+        opacity="0.26"
+      />
     </g>
   );
 }
@@ -964,190 +1070,82 @@ function Glasses({ look }: { look: Look }) {
 function HairDetails({ look, variant }: { look: Look; variant: ChibiVariant }) {
   return (
     <g fill="none" stroke={look.hairLight} strokeLinecap="round">
-      <path d="M104 72C122 54 146 46 170 48" strokeWidth="7" opacity="0.22" />
+      <path d="M104 72C122 54 146 46 170 48" strokeWidth="7" opacity="0.18" />
       {variant === "director" && (
         <>
-          <path d="M160 46v18" strokeWidth="2" opacity="0.45" />
-          <path d="M112 92c-6 36 -4 82 4 120" strokeWidth="2.2" opacity="0.45" />
-          <path d="M208 92c6 36 4 82 -4 120" strokeWidth="2.2" opacity="0.45" />
+          <path d="M120 56c-7 18 -10 34 -9 48" strokeWidth="2.1" opacity="0.45" />
+          <path d="M68 166c-2 24 -1 48 3 70" strokeWidth="2" opacity="0.35" />
+          <path d="M252 166c2 24 1 48 -3 70" strokeWidth="2" opacity="0.35" />
         </>
       )}
       {variant === "rose" && (
         <>
-          <path d="M126 56c-6 20 -8 42 -6 62" strokeWidth="2.2" opacity="0.5" />
-          <path d="M194 56c6 20 8 42 6 62" strokeWidth="2.2" opacity="0.5" />
-          <path d="M106 92c-4 30 -3 64 3 92" strokeWidth="2.2" opacity="0.4" />
-          <path d="M214 92c4 30 3 64 -3 92" strokeWidth="2.2" opacity="0.4" />
-          <path d="M148 58c-8 18 -10 38 -8 58" strokeWidth="1.8" opacity="0.4" />
+          <path d="M126 58c-5 18 -7 36 -6 52" strokeWidth="2.1" opacity="0.4" />
+          <path d="M74 130c-1 20 -1 38 1 52" strokeWidth="1.8" opacity="0.35" />
+          <path d="M246 130c1 20 1 38 -1 52" strokeWidth="1.8" opacity="0.35" />
         </>
       )}
       {variant === "cris" && (
         <>
-          <path d="M160 56v42" strokeWidth="2" opacity="0.45" />
-          <path d="M120 88c-10 18 -14 40 -12 60" strokeWidth="2.2" opacity="0.45" />
-          <path d="M200 88c10 18 14 40 12 60" strokeWidth="2.2" opacity="0.45" />
-          <path d="M118 116c6-4 12-4 18 0M184 116c6-4 12-4 18 0" strokeWidth="1.8" opacity="0.4" />
+          <path d="M124 52c-7 18 -10 34 -9 48" strokeWidth="2" opacity="0.4" />
+          <path d="M168 44c-5 18 -10 36 -14 54" strokeWidth="2" opacity="0.38" />
+          <path d="M74 132c-3 20 -3 38 0 54" strokeWidth="2" opacity="0.35" />
+          <path d="M246 132c3 20 3 38 0 54" strokeWidth="2" opacity="0.35" />
         </>
       )}
       {variant === "sherry" && (
         <>
-          <path d="M108 64c-8 22 -8 44 -2 64" strokeWidth="2.4" opacity="0.5" />
-          <path d="M212 64c8 22 8 44 2 64" strokeWidth="2.4" opacity="0.5" />
-          <path d="M84 150c-5 18 -4 36 2 52" strokeWidth="2.2" opacity="0.45" />
-          <path d="M236 150c5 18 4 36 -2 52" strokeWidth="2.2" opacity="0.45" />
-          <path d="M76 188c6 8 4 18 -2 24M244 188c-6 8 -4 18 2 24" strokeWidth="2" opacity="0.35" />
+          <path d="M112 62c-7 20 -8 38 -4 54" strokeWidth="2.2" opacity="0.42" />
+          <path d="M208 62c7 20 8 38 4 54" strokeWidth="2.2" opacity="0.42" />
+          <path d="M76 146c-4 16 -4 32 1 46" strokeWidth="2" opacity="0.35" />
+          <path d="M244 146c4 16 4 32 -1 46" strokeWidth="2" opacity="0.35" />
         </>
       )}
       {variant === "marilou" && (
         <>
-          <path d="M142 54v20" strokeWidth="2" opacity="0.45" />
-          <path d="M120 92c-8 30 -6 68 2 100" strokeWidth="2.2" opacity="0.45" />
-          <path d="M204 92c8 30 6 68 -2 100" strokeWidth="2.2" opacity="0.45" />
-          <path d="M94 116c-8 26 -8 54 0 78" strokeWidth="2" opacity="0.35" />
+          <path d="M196 54C190 70 186 84 179 96" strokeWidth="2" opacity="0.4" />
+          <path d="M68 158c-3 22 -2 42 1 58" strokeWidth="1.6" opacity="0.2" />
+          <path d="M252 158c3 22 2 42 -1 58" strokeWidth="1.6" opacity="0.2" />
         </>
       )}
     </g>
   );
 }
 
-function Clothing({ look, uid }: { look: Look; uid: string }) {
-  if (look.outfitStyle === "blazer") {
-    return (
-      <>
-        <path
-          d="M128 278L160 298L192 278L184 360L136 360Z"
-          fill={look.collar}
-          stroke="#2a1d18"
-          strokeWidth="2.4"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M128 278L160 298L140 360L104 360L116 302Z"
-          fill={look.outfit}
-          stroke="#2a1d18"
-          strokeWidth="2.8"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M192 278L160 298L180 360L216 360L204 302Z"
-          fill={look.outfit}
-          stroke="#2a1d18"
-          strokeWidth="2.8"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M140 268L160 288L180 268L172 260L160 274L148 260Z"
-          fill={look.collar}
-          stroke="#2a1d18"
-          strokeWidth="2.2"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M150 286c5 8 15 8 20 0"
-          fill="none"
-          stroke={look.accent}
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-        <circle cx="160" cy="300" r="4.2" fill={look.accent} stroke="#7a5a1e" strokeWidth="1.4" />
-        <circle cx="206" cy="320" r="12" fill="none" stroke={look.accent} strokeWidth="2.6" />
-        <path d="M200 320h12M206 314v12" stroke={look.accent} strokeWidth="1.8" strokeLinecap="round" />
-        <Lanyard look={look} />
-      </>
-    );
-  }
-
-  if (look.outfitStyle === "blouse") {
-    return (
-      <>
-        <path
-          d="M132 274L160 296L188 274L180 266L160 284L140 266Z"
-          fill={look.collar}
-          stroke="#2a1d18"
-          strokeWidth="2.2"
-          strokeLinejoin="round"
-        />
-        <path d="M152 286L168 286L172 360L148 360Z" fill={look.outfitLight} opacity="0.5" />
-        <path d="M160 292v62" stroke={look.outfitShade} strokeWidth="1.8" opacity="0.7" />
-        <circle cx="160" cy="308" r="2" fill={look.collar} />
-        <circle cx="160" cy="326" r="2" fill={look.collar} />
-        <circle cx="160" cy="344" r="2" fill={look.collar} />
-        <path
-          d="M118 300c8 6 14 14 18 24M202 300c-8 6 -14 14 -18 24"
-          fill="none"
-          stroke={look.outfitShade}
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.55"
-        />
-        <circle cx="206" cy="318" r="11" fill="none" stroke={look.accent} strokeWidth="2.4" />
-        <path d="M201 318h10M206 313v10" stroke={look.accent} strokeWidth="1.6" strokeLinecap="round" />
-        <Lanyard look={look} />
-      </>
-    );
-  }
-
-  if (look.outfitStyle === "vneck") {
-    return (
-      <>
-        <path
-          d="M136 272L160 306L184 272L192 276L168 320L152 320L128 276Z"
-          fill={look.skin}
-          opacity="0.9"
-        />
-        <path
-          d="M136 272L160 306L184 272"
-          fill="none"
-          stroke={look.outfitShade}
-          strokeWidth="5"
-          strokeLinecap="round"
-        />
-        <path
-          d="M148 294c5 5 19 5 24 0"
-          fill="none"
-          stroke={look.accent}
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
-        <circle cx="160" cy="312" r="3.2" fill={look.accent} stroke="#7a5a1e" strokeWidth="1.2" />
-        <path
-          d="M118 300c8 6 14 14 18 24M202 300c-8 6 -14 14 -18 24"
-          fill="none"
-          stroke={look.outfitShade}
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity="0.55"
-        />
-        <circle cx="208" cy="324" r="11" fill="none" stroke={look.accent} strokeWidth="2.4" />
-        <path d="M203 324h10M208 319v10" stroke={look.accent} strokeWidth="1.6" strokeLinecap="round" />
-        <Lanyard look={look} />
-      </>
-    );
-  }
-
+function Clothing({ look }: { look: Look }) {
   return (
     <>
+      {/* Navy AdZU polo collar. White piping follows the collar edge only —
+          the inner edges stay navy so no big white V is drawn at the throat. */}
       <path
-        d="M132 272L160 294L188 272"
+        d="M130 270L154 286L146 300L122 286Z"
+        fill={look.outfit}
+        stroke={look.outfitShade}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M190 270L166 286L174 300L198 286Z"
+        fill={look.outfit}
+        stroke={look.outfitShade}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M154 286L130 270L122 286L146 300"
         fill="none"
         stroke={look.collar}
-        strokeWidth="7"
+        strokeWidth="2.4"
+        strokeLinejoin="round"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M132 272L152 284L144 298L124 286Z"
-        fill={look.collar}
-        stroke="#2a1d18"
-        strokeWidth="2.2"
+        d="M166 286L190 270L198 286L174 300"
+        fill="none"
+        stroke={look.collar}
+        strokeWidth="2.4"
         strokeLinejoin="round"
-      />
-      <path
-        d="M188 272L168 284L176 298L196 286Z"
-        fill={look.collar}
-        stroke="#2a1d18"
-        strokeWidth="2.2"
-        strokeLinejoin="round"
+        strokeLinecap="round"
       />
       <path d="M160 294v66" stroke={look.outfitShade} strokeWidth="2.4" />
       <circle cx="160" cy="312" r="2.2" fill={look.collar} />
@@ -1160,8 +1158,17 @@ function Clothing({ look, uid }: { look: Look; uid: string }) {
         strokeLinecap="round"
         opacity="0.5"
       />
-      <circle cx="208" cy="322" r="11" fill="none" stroke={look.accent} strokeWidth="2.4" />
-      <path d="M203 322h10M208 317v10" stroke={look.accent} strokeWidth="1.6" strokeLinecap="round" />
+      <g>
+        <circle cx="208" cy="322" r="11" fill="#0b1f4a" stroke={look.accent} strokeWidth="2.4" />
+        <path
+          d="M203.5 328.2L208 316.4L212.5 328.2M205.5 324.2H210.5"
+          fill="none"
+          stroke={look.accent}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
       <Lanyard look={look} />
     </>
   );

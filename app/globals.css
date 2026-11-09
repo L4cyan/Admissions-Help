@@ -150,11 +150,10 @@ button:disabled {
   position: relative;
 }
 
-.brand-mark > svg {
-  width: 76px;
-  height: 76px;
-  margin-left: -16px;
-  margin-top: -9px;
+.brand-mark > img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .brand-text {
@@ -169,6 +168,7 @@ button:disabled {
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--navy-950);
+  white-space: nowrap;
 }
 
 .brand-sub {
@@ -184,6 +184,7 @@ button:disabled {
 .header-actions {
   display: flex;
   align-items: center;
+  flex: none;
   gap: 8px;
 }
 
@@ -199,6 +200,7 @@ button:disabled {
   font-weight: 600;
   color: var(--ink);
   text-decoration: none;
+  white-space: nowrap;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
@@ -240,6 +242,19 @@ button:disabled {
   display: grid;
   grid-template-columns: 370px minmax(0, 1fr);
   gap: 18px;
+}
+
+.app-main-chat {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  max-width: 1080px;
+}
+
+.app-main-chat .chat {
+  width: 100%;
+  max-width: 920px;
+  height: 100%;
 }
 
 /* ---------- stage ---------- */
@@ -486,6 +501,7 @@ button:disabled {
 /* ---------- chat ---------- */
 
 .chat {
+  position: relative;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -494,6 +510,27 @@ button:disabled {
   border-radius: 28px;
   background: var(--paper);
   box-shadow: 0 26px 60px -38px rgba(7, 22, 50, 0.42);
+}
+
+.poke-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 104px;
+  z-index: 7;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(360px, calc(100% - 32px));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffaf0;
+  padding: 7px 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 12px 24px -18px rgba(7, 22, 50, 0.6);
+  animation: poke-in 0.2s ease-out both;
+  pointer-events: none;
 }
 
 .chat-head {
@@ -567,6 +604,8 @@ button:disabled {
   padding: 11px 15px;
   font-size: 14.5px;
   line-height: 1.62;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .bubble-user {
@@ -575,23 +614,72 @@ button:disabled {
   color: #fffdf8;
   border-bottom-right-radius: 5px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   box-shadow: 0 10px 20px -18px rgba(7, 22, 50, 0.8);
 }
 
 .msg-guide {
   align-items: flex-start;
   max-width: 94%;
+  min-width: 0;
+  scroll-margin-top: 14px;
 }
 
 .msg-chibi {
-  width: 56px;
-  height: 66px;
+  width: 64px;
+  height: 76px;
   flex: none;
   margin-top: 17px;
   filter: drop-shadow(0 8px 8px rgba(43, 29, 18, 0.14));
 }
 
+.msg-chibi-btn {
+  position: relative;
+  z-index: 5;
+  flex: none;
+  width: 64px;
+  height: 76px;
+  margin-top: 17px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 8px 8px rgba(43, 29, 18, 0.14));
+  transition: transform 0.18s ease;
+}
+
+.msg-chibi-btn:hover {
+  transform: translateY(-2px) rotate(-1.5deg);
+}
+
+.msg-chibi-btn.is-poked {
+  animation: chibi-poke 0.5s ease-in-out;
+}
+
+.poke-bubble {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  z-index: 20;
+  width: max-content;
+  max-width: 170px;
+  translate: -50% -100%;
+  transform-origin: 50% 100%;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  border-bottom-left-radius: 3px;
+  background: #fffaf0;
+  padding: 5px 8px;
+  font-size: 9.5px;
+  line-height: 1.4;
+  color: var(--ink);
+  box-shadow: 0 8px 16px -12px rgba(7, 22, 50, 0.5);
+  animation: poke-in 0.2s ease-out both;
+  pointer-events: none;
+}
+
 .msg-main {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -731,12 +819,16 @@ button:disabled {
   border-radius: 12px;
   background: var(--paper);
   padding: 8px 11px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .sources summary {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-height: 32px;
+  padding: 3px 0;
   cursor: pointer;
   list-style: none;
   font-size: 10px;
@@ -772,8 +864,13 @@ button:disabled {
 .sources li {
   display: flex;
   gap: 8px;
+  min-width: 0;
   font-size: 10.5px;
   line-height: 1.45;
+}
+
+.sources li > div {
+  min-width: 0;
 }
 
 .source-num {
@@ -794,8 +891,12 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
   font-weight: 700;
   color: var(--navy-900);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .source-link {
@@ -816,17 +917,18 @@ button:disabled {
 .msg-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
-  margin-top: 3px;
+  gap: 4px;
+  margin-top: 5px;
 }
 
 .msg-actions button {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 9.5px;
+  gap: 5px;
+  min-height: 32px;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--muted);
   transition: background 0.2s ease, color 0.2s ease;
@@ -834,6 +936,28 @@ button:disabled {
 
 .msg-actions button:hover {
   background: var(--cream);
+  color: var(--navy-900);
+}
+
+.director-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--line);
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.director-note-chibi {
+  width: 26px;
+  height: 31px;
+  flex: none;
+}
+
+.director-note strong {
   color: var(--navy-900);
 }
 
@@ -964,7 +1088,7 @@ button:disabled {
   inset: 0;
   z-index: 80;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: flex-end;
   padding: 14px;
   background: rgba(7, 22, 50, 0.48);
@@ -974,7 +1098,8 @@ button:disabled {
 
 .team-sheet {
   width: min(1020px, 100%);
-  height: 100%;
+  height: auto;
+  max-height: calc(100dvh - 28px);
   overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 24px;
@@ -1028,6 +1153,7 @@ button:disabled {
 }
 
 .team-card-art {
+  position: relative;
   height: 170px;
   overflow: hidden;
   display: flex;
@@ -1039,6 +1165,24 @@ button:disabled {
   width: 150px;
   height: auto;
   margin-bottom: -10px;
+}
+
+.team-card-art .team-card-poke {
+  display: block;
+  width: 150px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  position: static;
+}
+
+/* Position against the art frame so the bubble can never clip on the card. */
+.team-card-poke .poke-bubble {
+  left: 50%;
+  top: 6px;
+  translate: -50% 0;
+  max-width: calc(100% - 12px);
+  text-align: center;
 }
 
 .team-card-body {
@@ -1120,8 +1264,11 @@ button:disabled {
 /* ---------- markdown ---------- */
 
 .markdown {
+  min-width: 0;
   font-size: 14.5px;
   line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .markdown p {
@@ -1160,6 +1307,8 @@ button:disabled {
   text-decoration: underline;
   text-decoration-color: rgba(223, 169, 43, 0.6);
   text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .markdown code {
@@ -1203,8 +1352,8 @@ button:disabled {
 
 .chibi-mouth.is-talking {
   transform-box: fill-box;
-  transform-origin: center;
-  animation: chibi-talk 0.22s ease-in-out infinite alternate;
+  transform-origin: 50% 50%;
+  animation: chibi-talk 0.3s ease-in-out infinite alternate;
 }
 
 .scene-plant {
@@ -1274,10 +1423,23 @@ button:disabled {
 
 @keyframes chibi-talk {
   from {
-    transform: scaleY(0.72);
+    transform: scaleY(0.92);
   }
   to {
-    transform: scaleY(1.08);
+    transform: scaleY(1.05);
+  }
+}
+
+@keyframes chibi-poke {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  30% {
+    transform: translateY(-6px) rotate(-3deg);
+  }
+  60% {
+    transform: translateY(-2px) rotate(2deg);
   }
 }
 
@@ -1312,6 +1474,17 @@ button:disabled {
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes poke-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
   }
 }
 
@@ -1465,33 +1638,47 @@ button:disabled {
   }
 
   .chat-thread {
-    padding: 13px 14px 8px;
+    padding: 32px 14px 8px;
     gap: 15px;
   }
 
   .suggestions {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: none;
-  }
-
-  .suggestions::-webkit-scrollbar {
-    display: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
   }
 
   .suggestion {
-    flex: none;
-    max-width: 78vw;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 100%;
+    max-width: none;
+    align-items: flex-start;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    padding: 9px 10px;
+    line-height: 1.35;
   }
 
-  .msg-chibi {
-    width: 44px;
-    height: 52px;
+  .suggestion svg {
+    flex: none;
+    margin-top: 1px;
+  }
+
+  .msg-chibi,
+  .msg-chibi-btn {
+    width: 50px;
+    height: 60px;
     margin-top: 16px;
+  }
+
+  /* Clamp the chat poke bubble inside the narrow thread. */
+  .poke-bubble {
+    left: 0;
+    top: -16px;
+    translate: 0 -100%;
+    max-width: min(170px, 62vw);
   }
 
   .bubble {
@@ -1499,12 +1686,23 @@ button:disabled {
     padding: 10px 13px;
   }
 
-  .suggestions {
-    margin-left: 0;
+  .poke-toast {
+    bottom: 96px;
   }
 
   .composer {
     padding: 9px 12px max(9px, env(safe-area-inset-bottom));
+  }
+
+  .composer-box {
+    min-height: 54px;
+  }
+
+  .composer textarea {
+    min-height: 44px;
+    padding: 8px 0;
+    font-size: 16px;
+    line-height: 1.35;
   }
 
   .composer-foot {
@@ -1544,6 +1742,7 @@ button:disabled {
 @media (max-width: 560px) {
   .app-header {
     height: 58px;
+    gap: 10px;
     padding: 0 14px;
   }
 
@@ -1551,13 +1750,6 @@ button:disabled {
     width: 40px;
     height: 40px;
     border-radius: 12px;
-  }
-
-  .brand-mark > svg {
-    width: 70px;
-    height: 70px;
-    margin-left: -15px;
-    margin-top: -8px;
   }
 
   .brand-name {
@@ -1595,9 +1787,10 @@ button:disabled {
     max-width: 100%;
   }
 
-  .msg-chibi {
-    width: 38px;
-    height: 46px;
+  .msg-chibi,
+  .msg-chibi-btn {
+    width: 44px;
+    height: 53px;
     margin-top: 17px;
   }
 
@@ -1606,7 +1799,12 @@ button:disabled {
   }
 
   .msg-meta {
-    font-size: 8px;
+    font-size: 10px;
+    gap: 6px;
+  }
+
+  .msg-badge {
+    font-size: 9px;
   }
 
   .handoff-text {
@@ -1634,6 +1832,41 @@ button:disabled {
 
   .team-card-body {
     padding: 10px 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .composer textarea {
+    min-height: 60px;
+  }
+}
+
+@media (max-width: 340px) {
+  .app-header {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .text-btn {
+    gap: 5px;
+    padding: 7px 8px;
   }
 }
 

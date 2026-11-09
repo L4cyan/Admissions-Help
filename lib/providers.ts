@@ -3,6 +3,8 @@ import type { StaffProfile } from "./staff";
 import {
   buildContext,
   extractiveAnswer,
+  identityReply,
+  isIdentityQuestion,
   isSmallTalk,
   noContextReply,
   normalizeHistory,
@@ -30,12 +32,12 @@ function systemPrompt(staff: StaffProfile, track: Track): string {
     dateStyle: "long",
     timeZone: "Asia/Manila",
   }).format(new Date());
-  return `You are ${staff.name}'s chibi guide for the AdZU College Admissions & Aid Office. ${staff.name} is ${staff.fullName}, ${staff.role}. You are an illustrated guide inspired by them, not the real person. If someone asks, say you are the chibi guide.
+  return `You are ${staff.name} (${staff.fullName}), ${staff.role}, speaking through your chibi guide. Speak in first person as ${staff.name} and stay in character. If someone directly asks whether you are the real person, say you are the chibi guide, that you are not a real person, and that the real ${staff.name} works at the Admissions & Aid Office. Otherwise do not add disclaimers about being a guide.
 
 VOICE
 ${VOICE[staff.id] ?? "Warm, clear, and helpful."}
 A light Filipino touch ("Salamat", "po", "Hala") is fine, but do not overdo it.
-Keep answers short: 2-4 short paragraphs or up to 4 bullets, under 150 words.
+Keep answers short: 2-4 short paragraphs or up to 4 bullets, under 150 words. The exception is a broad scholarship overview, which may use up to 5 bullets and 180 words.
 Do not write stage directions, actions in parentheses, or emotes. No emojis. Answer the question first, then add a short warm line if useful.
 
 HARD RULES
@@ -50,11 +52,33 @@ HARD RULES
 9. If a date, fee, or deadline in the notes may be outdated, say it should be confirmed with the office.
 10. Stay in your lane: this conversation is routed to the ${track} desk. If the question clearly belongs to the other desk, say who can help.
 11. Answer the specific question asked. Do not add a different process (for example, test-permit steps when the question is about enrollment) unless the user asks for it.
+12. Never claim that a staff member is present, busy, or available. Never say you can transfer the chat or connect the student to a person. Give the office contact instead.
+13. For a broad "what scholarships" question, cover all three categories — university, government, and private/donor — and state that government grants except PESFA are processed by CHED or the awarding agency.
 
 Today is ${today}. You are talking to a prospective student, parent, or scholar.
 
 OFFICE CONTACT
 ${OFFICE}`;
+}
+
+function conversationPrompt(staff: StaffProfile, track: Track): string {
+  return `You are ${staff.name} (${staff.fullName}), ${staff.role}, speaking through your chibi guide. Speak naturally in first person as ${staff.name}. Do not refer to yourself in third person or say "my chibi guide". No emojis, no stage directions, no actions in asterisks or parentheses. Stay in character.
+
+No official note matched this message. You may greet, react briefly, ask a clarifying question, and explain what you can help with. Do NOT state any AdZU fact, fee, deadline, requirement, eligibility rule, staff location, or policy. If the user asks for a specific fact, say you do not have it in your notes and give the office contact. Keep it to 1-3 short sentences and steer back to ${track === "admissions" ? "admissions or the CET" : "scholarships or financial aid"}. Do not add disclaimers about being a guide.
+
+OFFICE CONTACT
+${OFFICE}`;
+}
+
+function conversationFallback(staff: StaffProfile, question: string): string {
+  const text = question.toLowerCase();
+  if (/\b(help|assist|need help|help me)\b/.test(text)) {
+    return `${staff.name} here. Of course — what do you need help with: the CET, enrollment, or a scholarship? I can point you to the right person on the team.`;
+  }
+  if (/\b(love|haha|lol|hello|hi|hey|salamat|thank)\b/.test(text)) {
+    return `Haha, salamat! ${staff.name} here. I'm around for AdZU admissions and scholarship questions — what do you need help with?`;
+  }
+  return `I'm ${staff.name}. Ask me about the CET, enrollment, or scholarships, and I'll point you to the right person on the team.`;
 }
 
 function timeoutSignal(ms: number): AbortSignal {
@@ -93,16 +117,28 @@ function cleanReply(reply: string, maxSources: number): string {
     .replace(/\*\*Context\*\*:?/gi, "")
     .replace(/^\s*(answer|reply)\s*:\s*/i, "")
     .replace(/^\s*\([^)\n]{1,80}\)\s*/gm, "")
-    .replace(/\s+([,.!?;:])/g, "$1")
-    .replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (_match: string, group: string) =>
-      group
-        .split(",")
-        .map((part) => `[${part.trim()}]`)
-        .join(""),
+    .replace(
+      /\*?\([^)\n]*(?:chibi guide|the real (?:ma'am|sir|staff|teacher))[^)\n]*\)\*?/gi,
+      "",
     )
-    .replace(/\[(\d+)\]/g, (match, number: string) => {
-      const index = Number(number);
-      return index >= 1 && index <= maxSources ? match : "";
+    .replace(/^\s*\*[^*\n]{1,120}\*\s*/gm, "")
+    .replace(/\*([^*\n]{1,80})\*/g, (match: string, inner: string) =>
+      /\b(giggle|smile|sigh|wag|nod|tilt|laugh|chuckle|grin|adjust|blink|shrug)\b/i.test(
+        inner,
+      )
+        ? ""
+        : match,
+    )
+    .replace(/\s+([,.!?;:])/g, "$1")
+    .replace(/\[([^\]\n]*\d[^\]\n]*)\](?!\()/g, (_match: string, inner: string) => {
+      const indexes = Array.from(
+        new Set(
+          [...inner.matchAll(/\d+/g)]
+            .map((match) => Number(match[0]))
+            .filter((number) => number >= 1 && number <= maxSources),
+        ),
+      );
+      return indexes.map((number) => `[${number}]`).join("");
     })
     .replace(/[ \t]{2,}/g, " ")
     .replace(/[ \t]+\n/g, "\n")
@@ -206,7 +242,6 @@ async function askGemini(
   const models = [
     process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
-    "gemini-2.5-flash-lite",
     "gemini-3.6-flash",
   ];
 
@@ -460,8 +495,22 @@ export async function answerQuestion(input: {
   history: ChatTurn[];
   chunks: Chunk[];
   sources: Source[];
+  conversational?: boolean;
 }): Promise<ChatResult> {
-  const { track, staff, question, history, chunks, sources } = input;
+  const { track, staff, question, history, chunks, sources, conversational } =
+    input;
+
+  if (isIdentityQuestion(question)) {
+    return {
+      reply: identityReply(staff),
+      sources: [],
+      provider: "guide",
+      track,
+      staff: staff.id,
+      handoff: false,
+      usedContext: false,
+    };
+  }
 
   if (isSmallTalk(question)) {
     return {
@@ -475,20 +524,13 @@ export async function answerQuestion(input: {
     };
   }
 
-  if (!chunks.length) {
-    return {
-      reply: noContextReply(staff),
-      sources: [],
-      provider: "guide",
-      track,
-      staff: staff.id,
-      handoff: false,
-      usedContext: false,
-    };
-  }
-
-  const context = buildContext(chunks);
-  const system = systemPrompt(staff, track);
+  const hasContext = !conversational && chunks.length > 0;
+  const context = hasContext
+    ? buildContext(chunks)
+    : "No matching official note was retrieved for this message.";
+  const system = hasContext
+    ? systemPrompt(staff, track)
+    : conversationPrompt(staff, track);
   const deadline = Date.now() + 40_000;
   const left = (cap: number) => Math.max(1200, Math.min(cap, deadline - Date.now()));
 
@@ -509,12 +551,12 @@ export async function answerQuestion(input: {
       if (!badReply(reply)) {
         return {
           reply,
-          sources,
+          sources: hasContext ? sources : [],
           provider: name,
           track,
           staff: staff.id,
           handoff: false,
-          usedContext: true,
+          usedContext: hasContext,
         };
       }
     } catch (error) {
@@ -523,6 +565,18 @@ export async function answerQuestion(input: {
         error instanceof Error ? error.message : error,
       );
     }
+  }
+
+  if (!hasContext) {
+    return {
+      reply: conversationFallback(staff, question),
+      sources: [],
+      provider: "chat",
+      track,
+      staff: staff.id,
+      handoff: false,
+      usedContext: false,
+    };
   }
 
   return {

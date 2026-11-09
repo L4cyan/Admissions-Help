@@ -15,6 +15,8 @@ import type { Category, DocumentStatus } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const ADMIN_CACHE = { "cache-control": "private, no-store, max-age=0" };
+
 function validCategory(value: unknown): value is Category {
   return value === "admissions" || value === "scholarships" || value === "general";
 }
@@ -35,28 +37,43 @@ function cleanSource(value: unknown): string | undefined | null {
 }
 
 export async function GET(request: Request) {
-  const kb = await getKB();
-  const admin = isAdmin(request);
   const url = new URL(request.url);
-  const full = admin && url.searchParams.get("full") === "1";
+  const admin = isAdmin(request);
+  const wantsFull = url.searchParams.get("full") === "1";
+
+  if (wantsFull && !admin) {
+    return NextResponse.json(
+      { error: "Admin passcode required." },
+      { status: 401, headers: ADMIN_CACHE },
+    );
+  }
+
+  const kb = await getKB();
+  const full = wantsFull;
   const gaps = admin ? await gapStats() : undefined;
 
   const docs = admin
     ? kb.documents
     : kb.documents.filter((doc) => isPublished(doc));
 
-  return NextResponse.json({
-    admin,
-    storage: getStorageMode(),
-    stats: kbStats(kb),
-    gaps,
-    documents: docs.map((doc) => documentMeta(doc, full)),
-  });
+  return NextResponse.json(
+    {
+      admin,
+      storage: getStorageMode(),
+      stats: kbStats(kb),
+      gaps,
+      documents: docs.map((doc) => documentMeta(doc, full)),
+    },
+    { headers: admin ? ADMIN_CACHE : { "cache-control": "no-store" } },
+  );
 }
 
 export async function PATCH(request: Request) {
   if (!isAdmin(request)) {
-    return NextResponse.json({ error: "Admin passcode required." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Admin passcode required." },
+      { status: 401, headers: ADMIN_CACHE },
+    );
   }
 
   try {
@@ -126,11 +143,14 @@ export async function PATCH(request: Request) {
     }
 
     const kb = await updateDocument(body.id, patch);
-    return NextResponse.json({
-      ok: true,
-      stats: kbStats(kb),
-      documents: kb.documents.map((doc) => documentMeta(doc, true)),
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        stats: kbStats(kb),
+        documents: kb.documents.map((doc) => documentMeta(doc, true)),
+      },
+      { headers: ADMIN_CACHE },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save.";
     const status = message.includes("not found") ? 404 : 500;
@@ -141,7 +161,10 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!isAdmin(request)) {
-    return NextResponse.json({ error: "Admin passcode required." }, { status: 401 });
+    return NextResponse.json(
+      { error: "Admin passcode required." },
+      { status: 401, headers: ADMIN_CACHE },
+    );
   }
 
   const url = new URL(request.url);
@@ -156,9 +179,12 @@ export async function DELETE(request: Request) {
   }
 
   const kb = await removeDocument(id);
-  return NextResponse.json({
-    ok: true,
-    stats: kbStats(kb),
-    documents: kb.documents.map((doc) => documentMeta(doc, true)),
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      stats: kbStats(kb),
+      documents: kb.documents.map((doc) => documentMeta(doc, true)),
+    },
+    { headers: ADMIN_CACHE },
+  );
 }

@@ -1,4 +1,5 @@
 import type { StaffId, Track } from "./types";
+import { isIdentityQuestion } from "./kb";
 
 export interface StaffProfile {
   id: StaffId;
@@ -37,7 +38,7 @@ export const STAFF: Record<StaffId, StaffProfile> = {
   },
   rose: {
     id: "rose",
-    name: "Ate Rose",
+    name: "Ma'am Rose",
     fullName: "Rose Jasmine Lumigis",
     role: "Scholarships & financial aid",
     desk: "scholarships",
@@ -55,7 +56,7 @@ export const STAFF: Record<StaffId, StaffProfile> = {
   },
   cris: {
     id: "cris",
-    name: "Ate Cris",
+    name: "Ma'am Cris",
     fullName: "Crizel P. Cardenas",
     role: "Scholarships & ASAA",
     desk: "scholarships",
@@ -73,7 +74,7 @@ export const STAFF: Record<StaffId, StaffProfile> = {
   },
   sherry: {
     id: "sherry",
-    name: "Ate Sherry",
+    name: "Ma'am Sherry",
     fullName: "Sherry Gloria A. Lim",
     role: "Admissions · CET Test Coordinator",
     desk: "admissions",
@@ -91,7 +92,7 @@ export const STAFF: Record<StaffId, StaffProfile> = {
   },
   marilou: {
     id: "marilou",
-    name: "Ate Marilou",
+    name: "Ma'am Marilou",
     fullName: "Marilou Pong",
     role: "Admissions & enrollment",
     desk: "admissions",
@@ -217,7 +218,10 @@ const WEAK: Record<Track, string[]> = {
 };
 
 const FOLLOW_UP =
-  /^(and|also|then|what about|how about|what if|paano|saan|kailan|magkano|sino|pwede|pano)\b/i;
+  /^(and|also|then|what about|how about|what if|how much|where|when|who|which|paano|saan|kailan|magkano|sino|pwede|pano)\b/i;
+
+const OFFICE_LOCATION =
+  /\b(admissions (?:&|and) aid office|admissions office|office location|office address|where (?:is|'s|can i find|do i find) (?:the )?(?:admissions|office|admissions (?:&|and aid )?office)|address|contact(?: details| info| number)?|email|phone|telephone)\b/i;
 
 function keywordHits(text: string, words: string[], weight: number): number {
   let score = 0;
@@ -258,7 +262,7 @@ export function routeQuestion(
   const strongAdmissions = keywordHits(text, STRONG.admissions, 1);
   const isFollowUp =
     Boolean(previousTrack) &&
-    (text.length < 70 || FOLLOW_UP.test(text)) &&
+    FOLLOW_UP.test(text) &&
     strongScholarship === 0 &&
     strongAdmissions === 0;
 
@@ -296,9 +300,22 @@ export function routeQuestion(
     reason = "No clear desk; starting with admissions";
   }
 
+  // Identity questions and office/location questions always go to the director,
+  // even on a follow-up that would otherwise inherit the scholarship desk.
+  if (isIdentityQuestion(text) || OFFICE_LOCATION.test(text)) {
+    return {
+      track,
+      staff: "director",
+      confidence: "medium",
+      reason: isIdentityQuestion(text)
+        ? "Identity question"
+        : "Office or location question",
+    };
+  }
+
   // If the question is clearly about the office itself, the director answers.
   const officeish =
-    /\b(who are you|who is|staff|team|director|human|person|office hours|contact|email|phone|number|address|where is the office|complaint|follow up|follow-up)\b/i.test(
+    /\b(who is|staff|team|director|human|person|office hours|complaint|follow up|follow-up)\b/i.test(
       text,
     );
   if (officeish && confidence !== "high") {
@@ -327,7 +344,7 @@ function pickStaff(
 
   if (track === "scholarships") {
     const cris =
-      /(deadline|status|renew|asaa|submit|submission|form|document|requirement|interview|follow.?up|release|result)/i.test(
+      /(deadline|status|renew|asaa|interview|follow.?up|release|result)/i.test(
         text,
       );
     return cris ? "cris" : "rose";

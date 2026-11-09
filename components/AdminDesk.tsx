@@ -185,7 +185,10 @@ export function AdminDesk() {
           cache: "no-store",
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "That passcode did not work.");
+        const adminConfirmed = data.admin === true;
+        if (!response.ok || !adminConfirmed) {
+          throw new Error(data.error || "That passcode did not work.");
+        }
         keyRef.current = candidate;
         setUnlocked(true);
         setDocs(data.documents ?? []);
@@ -1256,14 +1259,14 @@ export function AdminDesk() {
                   {gaps.map((gap) => (
                     <div
                       key={gap.id}
-                      className={`flex flex-col gap-3 rounded-xl border px-3.5 py-3 sm:flex-row sm:items-center ${
+                      className={`flex min-w-0 flex-col gap-3 rounded-xl border px-3.5 py-3 sm:flex-row sm:items-center ${
                         gap.resolved
                           ? "border-line/60 bg-cream/20 opacity-70"
                           : "border-line bg-paper"
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium leading-snug text-ink">
+                        <p className="break-words text-sm font-medium leading-snug text-ink [overflow-wrap:anywhere]">
                           {gap.question}
                         </p>
                         <p className="mt-1 flex flex-wrap items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.08em] text-muted">

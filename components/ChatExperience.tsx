@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  ArrowRight,
   BookOpenCheck,
   Check,
   Copy,
@@ -25,8 +24,8 @@ import {
   type FormEvent,
 } from "react";
 import { Chibi } from "./Chibi";
-import { DeskScene } from "./DeskScene";
 import { MarkdownText } from "./MarkdownText";
+import { PokeChibi } from "./PokeChibi";
 import { TeamSheet } from "./TeamSheet";
 import { STAFF, routeQuestion } from "@/lib/staff";
 import type { Source, StaffId, Track } from "@/lib/types";
@@ -58,7 +57,7 @@ function greeting(): UIMessage {
     staff: "director",
     createdAt: Date.now(),
     content:
-      "Hi, future Atenista! I'm the chibi guide for Ma'am Jen and the College Admissions & Aid team. Ask me anything about AdZU college admissions or scholarships — no forms, no lanes. I'll bring in the right person from the office.",
+      "Hi, future Atenista! I'm Ma'am Jen. Ask me anything about AdZU college admissions or scholarships — no forms, no lanes. I'll bring in the right person from the office.",
   };
 }
 
@@ -86,29 +85,6 @@ function speechText(markdown: string): string {
     .slice(0, 1200);
 }
 
-function previewText(markdown: string): string {
-  const clean = markdown
-    .replace(/\[(\d+)\]/g, "")
-    .replace(/\[([^\]]+)\]\((?:https?:\/\/)[^)]+\)/g, "$1")
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/[*_#`>]/g, "")
-    .replace(/\n{2,}/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  const sentences = clean.split(/(?<=[.!?])\s+/);
-  const useful =
-    sentences.find(
-      (sentence) =>
-        sentence.length >= 40 &&
-        !/^(okay|sure|hello|hi|great|of course|absolutely|salamat|thank|yes|no)\b/i.test(
-          sentence,
-        ),
-    ) ||
-    sentences[0] ||
-    clean;
-  return useful.length > 118 ? `${useful.slice(0, 115).trimEnd()}…` : useful;
-}
-
 function deskLabel(staff: StaffId): string {
   const desk = STAFF[staff].desk;
   if (desk === "both") return "Director";
@@ -131,6 +107,13 @@ const VOICE: Record<StaffId, { pitch: number; rate: number }> = {
   marilou: { pitch: 1.05, rate: 1 },
 };
 
+const DIRECTOR_NOTES: Partial<Record<StaffId, string>> = {
+  rose: "You've got this. Confirm the final details with us, ha?",
+  cris: "One step at a time. Confirm the deadline with the office.",
+  sherry: "You're doing fine. Bring your questions to the office anytime.",
+  marilou: "Take a breath. Your checklist is manageable.",
+};
+
 export function ChatExperience({
   initialQuery,
   initialDesk,
@@ -146,6 +129,7 @@ export function ChatExperience({
   const [teamOpen, setTeamOpen] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [pokeToast, setPokeToast] = useState<string | null>(null);
   const [stageStaff, setStageStaff] = useState<StaffId>("director");
   const [track, setTrack] = useState<Track | undefined>(initialDesk);
 
@@ -153,10 +137,15 @@ export function ChatExperience({
   const stageStaffRef = useRef<StaffId>(stageStaff);
   const trackRef = useRef<Track | undefined>(track);
   const loadingRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const nearBottomRef = useRef(true);
+  const expectAnswerRef = useRef(false);
+  const wasLoadingRef = useRef(false);
   const autoRan = useRef(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pokeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const hintRef = useRef<Track | undefined>(initialDesk);
 
@@ -177,6 +166,10 @@ export function ChatExperience({
   }, [loading]);
 
   useEffect(() => {
+    if (initialQuery?.trim()) {
+      setHydrated(true);
+      return;
+    }
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -205,7 +198,7 @@ export function ChatExperience({
       // sessionStorage can be unavailable; keep the greeting.
     }
     setHydrated(true);
-  }, []);
+  }, [initialQuery]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -223,9 +216,67 @@ export function ChatExperience({
     }
   }, [hydrated, messages, stageStaff, track]);
 
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    nearBottomRef.current = true;
+    endRef.current?.scrollIntoView({ behavior, block: "end" });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    nearBottomRef.current =
+      scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 96;
+  }, []);
+
+  // Start restored threads at the newest message.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, loading, error]);
+    if (!hydrated) return;
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    scroller.scrollTop = scroller.scrollHeight;
+    nearBottomRef.current = true;
+  }, [hydrated]);
+
+  // Sending always brings the composer's new message into view.
+  useEffect(() => {
+    if (!loading) return;
+    scrollToBottom();
+  }, [loading, scrollToBottom]);
+
+  useEffect(() => {
+    if (!error) return;
+    scrollToBottom();
+  }, [error, scrollToBottom]);
+
+  // For a fresh answer, reveal its beginning instead of the very end.
+  useEffect(() => {
+    if (!expectAnswerRef.current) return;
+    const last = messages[messages.length - 1];
+    if (last?.role !== "assistant") return;
+    expectAnswerRef.current = false;
+    if (!nearBottomRef.current) return;
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    const guides = scroller.querySelectorAll<HTMLElement>(
+      ".msg-guide:not(.msg-typing)",
+    );
+    const target = guides[guides.length - 1];
+    if (!target) return;
+    const frame = window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages]);
+
+  // Restore typing focus after a reply, but never pop the keyboard on phones.
+  useEffect(() => {
+    if (wasLoadingRef.current && !loading) {
+      if (window.matchMedia("(min-width: 900px)").matches) {
+        taRef.current?.focus({ preventScroll: true });
+      }
+    }
+    wasLoadingRef.current = loading;
+  }, [loading]);
 
   useEffect(() => {
     const element = taRef.current;
@@ -246,6 +297,7 @@ export function ChatExperience({
       abortRef.current?.abort();
       window.speechSynthesis?.cancel();
       if (copyTimer.current) clearTimeout(copyTimer.current);
+      if (pokeTimer.current) clearTimeout(pokeTimer.current);
     };
   }, []);
 
@@ -314,6 +366,8 @@ export function ChatExperience({
       setError(null);
       setLoading(true);
       loadingRef.current = true;
+      nearBottomRef.current = true;
+      expectAnswerRef.current = true;
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -364,8 +418,10 @@ export function ChatExperience({
         hintRef.current = undefined;
       } catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") {
+          expectAnswerRef.current = false;
           return;
         }
+        expectAnswerRef.current = false;
         setError(
           caught instanceof Error
             ? caught.message
@@ -405,6 +461,8 @@ export function ChatExperience({
     setError(null);
     setLoading(false);
     loadingRef.current = false;
+    expectAnswerRef.current = false;
+    nearBottomRef.current = true;
     setStageStaff("director");
     setTrack(initialDesk);
     try {
@@ -427,6 +485,12 @@ export function ChatExperience({
     }
   };
 
+  const handlePoke = useCallback((line: string) => {
+    setPokeToast(line);
+    if (pokeTimer.current) clearTimeout(pokeTimer.current);
+    pokeTimer.current = setTimeout(() => setPokeToast(null), 2600);
+  }, []);
+
   const hasUserMessage = messages.some((message) => message.role === "user");
   const stage = STAFF[stageStaff];
   const lastAssistant = useMemo(
@@ -438,11 +502,6 @@ export function ChatExperience({
   const handlePlaceholder = /^[A-Z]{2,}/.test(firstHandle)
     ? firstHandle
     : `${firstHandle.charAt(0).toLowerCase()}${firstHandle.slice(1)}`;
-  const stageLine = loading
-    ? "Let me check the official notes…"
-    : lastAssistant && lastAssistant.id !== "welcome-director"
-      ? previewText(lastAssistant.content)
-      : stage.line;
 
   const handleTeamAsk = (question: string, staff: StaffId) => {
     setTeamOpen(false);
@@ -454,7 +513,7 @@ export function ChatExperience({
       <header className="app-header">
         <Link href="/" className="brand" aria-label="AdZU Ask home">
           <span className="brand-mark">
-            <Chibi variant="director" className="h-full w-full" />
+            <img src="/brand/adzu-ask-logo.svg" alt="" />
           </span>
           <span className="brand-text">
             <span className="brand-name">AdZU Ask</span>
@@ -482,65 +541,8 @@ export function ChatExperience({
         </div>
       </header>
 
-      <main className="app-main">
-        <aside className="stage" aria-label="The Admissions and Aid desk">
-          <div className="stage-head">
-            <span className="stage-live" aria-hidden />
-            College Admissions &amp; Aid
-          </div>
+      <main className="app-main app-main-chat">
 
-          <div className="stage-body">
-            <div className="stage-frame">
-              <DeskScene className="stage-scene" />
-              <div className="stage-chibi-wrap">
-                <Chibi
-                  variant={stage.chibi}
-                  speaking={loading}
-                  className="stage-chibi"
-                  title={`${stage.name} chibi guide`}
-                />
-              </div>
-              <div className="stage-desk-lip" aria-hidden />
-            </div>
-
-            <div className="stage-bubble" key={`${stage.id}-${messages.length}-${loading}`}>
-              <p className="stage-bubble-name">
-                {stage.name}
-                <span>·</span>
-                {deskLabel(stage.id)}
-              </p>
-              <p className="stage-bubble-text">{stageLine}</p>
-              {loading && (
-                <span className="stage-typing" aria-label="Checking the notes">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="stage-info">
-            <p className="stage-name">{stage.name}</p>
-            <p className="stage-role">{stage.role}</p>
-            <p className="stage-handles">{stage.handles.join(" · ")}</p>
-          </div>
-
-          <button
-            type="button"
-            className="stage-team-btn"
-            onClick={() => setTeamOpen(true)}
-          >
-            <Users className="h-4 w-4" aria-hidden />
-            Meet the whole team
-            <ArrowRight className="ml-auto h-4 w-4" aria-hidden />
-          </button>
-
-          <p className="stage-disclaimer">
-            Chibi guides are illustrations, not live staff. They answer only from
-            the official notes in this app.
-          </p>
-        </aside>
 
         <section className="chat" aria-label="Chat with the Admissions and Aid guides">
           <header className="chat-head">
@@ -563,7 +565,7 @@ export function ChatExperience({
             </button>
           </header>
 
-          <div className="chat-scroll">
+          <div className="chat-scroll" ref={scrollRef} onScroll={handleScroll}>
             <div className="chat-thread" aria-live="polite" aria-relevant="additions">
               {messages.map((message, index) => (
                 <Fragment key={message.id}>
@@ -586,12 +588,11 @@ export function ChatExperience({
                     </div>
                   ) : (
                     <div className="msg msg-guide">
-                      <div className="msg-chibi" aria-hidden>
-                        <Chibi
-                          variant={STAFF[message.staff].chibi}
-                          className="h-full w-full"
-                        />
-                      </div>
+                      <PokeChibi
+                        variant={STAFF[message.staff].chibi}
+                        onPoke={handlePoke}
+                        showBubble={false}
+                      />
                       <div className="msg-main">
                         <div className="msg-meta">
                           <span className="msg-name">
@@ -674,6 +675,19 @@ export function ChatExperience({
                             {copiedId === message.id ? "Copied" : "Copy"}
                           </button>
                         </div>
+
+                        {message.staff !== "director" &&
+                          message.id === lastAssistant?.id && (
+                            <div className="director-note">
+                              <span className="director-note-chibi" aria-hidden>
+                                <Chibi variant="director" className="h-full w-full" />
+                              </span>
+                              <p>
+                                <strong>Ma'am Jen:</strong>{" "}
+                                {DIRECTOR_NOTES[message.staff]}
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
@@ -737,6 +751,12 @@ export function ChatExperience({
             </div>
           </div>
 
+          {pokeToast && (
+            <div className="poke-toast" role="status">
+              {pokeToast}
+            </div>
+          )}
+
           <form
             className="composer"
             onSubmit={(event: FormEvent) => {
@@ -765,7 +785,6 @@ export function ChatExperience({
                     ? "Ask about AdZU admissions or aid…"
                     : `Ask ${stage.name} about ${handlePlaceholder}…`
                 }
-                disabled={loading}
                 aria-label="Ask a question"
               />
               <button

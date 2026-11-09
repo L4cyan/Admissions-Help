@@ -139,11 +139,11 @@ The office processes CET applications and results, enrollment of new and transfe
       addedAt: CHECKED,
       text: `The official AdZU College Admissions & Aid Office page lists these people:
 
-- Jennifer G. Reyes — Director. Students and families often call her Ma'am Jen or Ate Jen.
-- Crizel P. Cardenas — Staff; scholarship and ASAA work. Often called Ate Cris.
-- Rose Jasmine Lumigis — Staff; scholarship and financial-aid work. Often called Ate Rose.
-- Sherry Gloria A. Lim — Staff; Admissions, and the CET Test Coordinator. Often called Ate Sherry.
-- Marilou Pong — Staff; Admissions and enrollment. Often called Ate Marilou.
+- Jennifer G. Reyes — Director. Students and families often call her Ma'am Jen.
+- Crizel P. Cardenas — Staff; scholarship and ASAA work. Often called Ma'am Cris.
+- Rose Jasmine Lumigis — Staff; scholarship and financial-aid work. Often called Ma'am Rose.
+- Sherry Gloria A. Lim — Staff; Admissions, and the CET Test Coordinator. Often called Ma'am Sherry.
+- Marilou Pong — Staff; Admissions and enrollment. Often called Ma'am Marilou.
 
 The same office handles CET applications and results, freshman and transferee enrollment, academic program shifting, scholarship applications, and scholar performance evaluation.
 

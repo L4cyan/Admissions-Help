@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { answerQuestion } from "@/lib/providers";
-import { isSmallTalk, retrieve } from "@/lib/kb";
+import { isIdentityQuestion, isSmallTalk, retrieve } from "@/lib/kb";
 import { getKB } from "@/lib/storage";
 import { routeQuestion, staffFor } from "@/lib/staff";
 import { recordGap } from "@/lib/gaps";
@@ -24,24 +24,56 @@ export async function POST(request: Request) {
     const ip = clientIp(request);
     const limit = rateLimit(`chat:${ip}`, 60);
     if (!limit.ok) {
+      const retryAfter = Math.max(
+        1,
+        Math.ceil((limit.reset - Date.now()) / 1000),
+      );
       return NextResponse.json(
         {
           error:
             "You're asking faster than I can keep up. Give me a minute, then try again.",
         },
-        { status: 429 },
+        {
+          status: 429,
+          headers: {
+            "cache-control": "no-store",
+            "retry-after": String(retryAfter),
+          },
+        },
       );
     }
 
-    const body = (await request.json()) as {
+    let body: {
       messages?: Array<{ role?: string; content?: string }>;
       previousTrack?: string;
       previousStaff?: string;
       preferredStaff?: string;
       hint?: string;
     };
+    try {
+      const parsed = (await request.json()) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return NextResponse.json(
+          { error: "The request body must be a JSON object." },
+          { status: 400 },
+        );
+      }
+      body = parsed as typeof body;
+    } catch {
+      return NextResponse.json(
+        { error: "The request body must be valid JSON." },
+        { status: 400 },
+      );
+    }
 
-    const messages: ChatTurn[] = (body.messages ?? [])
+    if (!Array.isArray(body.messages)) {
+      return NextResponse.json(
+        { error: "Messages must be an array." },
+        { status: 400 },
+      );
+    }
+
+    const messages: ChatTurn[] = body.messages
       .filter(
         (message) =>
           message &&
@@ -94,6 +126,8 @@ export async function POST(request: Request) {
     const handoff = previousStaff
       ? previousStaff !== route.staff
       : route.staff !== "director";
+    const conversational =
+      route.staff === "director" && route.confidence === "low";
 
     const kb = await getKB();
     const { chunks, sources } = retrieve(kb, question, route.track, 6);
@@ -104,6 +138,7 @@ export async function POST(request: Request) {
       history,
       chunks,
       sources,
+      conversational,
     });
 
     const replyMiss =
@@ -112,6 +147,7 @@ export async function POST(request: Request) {
       );
     const shouldLogGap =
       !isSmallTalk(question) &&
+      !isIdentityQuestion(question) &&
       (result.provider === "guide" || replyMiss);
     if (shouldLogGap) {
       void recordGap({

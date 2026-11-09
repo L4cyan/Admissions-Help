@@ -15,12 +15,12 @@ The five guides are based on the people listed on the official [College Admissio
 | Guide | Full name | Role | Desk |
 | --- | --- | --- | --- |
 | **Ma'am Jen** | Jennifer G. Reyes | Director, College Admissions & Aid Office | Both |
-| **Ate Sherry** | Sherry Gloria A. Lim | Admissions · CET Test Coordinator | Admissions |
-| **Ate Marilou** | Marilou Pong | Admissions & enrollment | Admissions |
-| **Ate Rose** | Rose Jasmine Lumigis | Scholarships & financial aid | Scholarships |
-| **Ate Cris** | Crizel P. Cardenas | Scholarships & ASAA | Scholarships |
+| **Ma'am Sherry** | Sherry Gloria A. Lim | Admissions · CET Test Coordinator | Admissions |
+| **Ma'am Marilou** | Marilou Pong | Admissions & enrollment | Admissions |
+| **Ma'am Rose** | Rose Jasmine Lumigis | Scholarships & financial aid | Scholarships |
+| **Ma'am Cris** | Crizel P. Cardenas | Scholarships & ASAA | Scholarships |
 
-The public chat opens with Ma'am Jen. When you ask a question, a fast keyword-and-context router hands you to the right person. The handoff is visible in the transcript, and the stage chibi changes to match.
+The public chat opens with Ma'am Jen. When you ask a question, a fast keyword-and-context router hands you to the right person. The handoff is visible in the transcript, and the chibi avatar beside each reply changes to match.
 
 The staff directory is also in the knowledge base, so questions like "who is the director?" or "who handles scholarships?" can be answered with a citation.
 
@@ -29,10 +29,11 @@ The staff directory is also in the knowledge base, so questions like "who is the
 ## Features
 
 - **Chat first, no lane picker.** `/` is the chat. The composer is focused, there are no forms to start, and the director greets you immediately.
-- **Automatic desk handoff.** Admissions questions go to Ate Sherry (CET, permits, schedules) or Ate Marilou (freshman, transferee, enrollment). Scholarship questions go to Ate Rose (grants, financial aid) or Ate Cris (applications, renewals, deadlines). Ma'am Jen handles office questions, staff questions, and anything unclear.
-- **Chibi stage.** The active guide appears behind a desk with a speech bubble that updates as they talk. The SVG chibis blink, breathe, sway, and move their mouths while answering.
+- **Automatic desk handoff.** Admissions questions go to Ma'am Sherry (CET, permits, schedules) or Ma'am Marilou (freshman, transferee, enrollment). Scholarship questions go to Ma'am Rose (grants, financial aid, requirements, documents) or Ma'am Cris (deadlines, status, renewals, ASAA, interviews, results). Ma'am Jen handles identity and office/location questions, staff questions, and anything unclear.
+- **Inline chibi avatars.** The active guide's SVG chibi appears beside each reply in the transcript. The chibis blink, breathe, sway, and move their mouths while answering; there is no separate stage panel.
 - **Cited answers.** Retrieval runs over the knowledge base; the model answers only from retrieved passages; citations look like `[1]`, `[2]`. A collapsible **Sources** panel shows the official page or file.
-- **Real AI, with a fallback.** The app can use a local Ollama model, a free Gemini/OpenRouter/Groq key, or the keyless Pollinations free tier. If every model is unavailable or rate-limited, it returns **quoted notes** and labels the answer, rather than guessing.
+- **Real AI, with a fallback.** The app can use a custom OpenAI-compatible endpoint, Gemini, OpenRouter, Groq, or a local Ollama model, then the keyless Pollinations free tier. If every model is unavailable or rate-limited, it returns **quoted notes** and labels the answer, rather than guessing.
+- **Conversation mode.** Off-topic messages, “please help”, and other non-policy chat get a short in-character reply that steers back to admissions or scholarships. It will not invent a fee, deadline, or requirement just to keep talking.
 - **Fast chat conveniences.** Enter to send, Shift+Enter for a new line, read-aloud per answer, copy, new chat, session-tab memory, and deep links such as `/?q=How%20do%20I%20apply...`.
 - **Team sheet.** See all five people, their full names, roles, and what they handle.
 - **Staff content desk.** Passcode gate; guided note builder; PDF/DOCX/text upload with an editable preview; publish or save as draft; searchable library with edit, publish/unpublish, delete, and JSON export; and an **Info gaps** queue of questions the notes could not answer.
@@ -42,11 +43,11 @@ The staff directory is also in the knowledge base, so questions like "who is the
 
 ## How a question is answered
 
-1. **Route.** `lib/staff.ts` scores the question against admissions and scholarship language. Follow-ups stay on the current desk. If the question is about the office or people, Ma'am Jen takes it.
+1. **Route.** `lib/staff.ts` scores the question against admissions and scholarship language. Follow-ups stay on the current desk. Identity questions ("are you real?", "who are you?") and office/location questions (address, contact, admissions office) always go to Ma'am Jen instead of inheriting the previous desk.
 2. **Retrieve.** `lib/kb.ts` tokenizes the knowledge base, scores chunks with a TF-IDF-style lexical search, weights the selected desk, and returns up to six chunks and four source records. Draft notes are excluded.
-3. **Answer.** The selected staff persona gets a system prompt with hard rules: use only the retrieved context, cite every factual claim, never promise a slot or award, and defer to the office for a specific case.
-4. **Validate citations.** The reply is cleaned of emojis, stage directions, smart quotes, and citations that point outside the retrieved sources.
-5. **Fallback.** If no model answers, the app extracts relevant sentences from the notes, adds citations, and labels the answer **quoted notes**.
+3. **Answer.** The selected staff persona gets a system prompt with hard rules: use only the retrieved context, cite every factual claim, never promise a slot or award, and defer to the office for a specific case. If no note matched, the model gets **conversation mode** instead: it may greet, react, and ask a clarifying question, but it cannot state an admissions fact, fee, deadline, or requirement.
+4. **Validate citations.** The reply is cleaned of emojis, actions in parentheses/asterisks, smart quotes, and citations that point outside the retrieved sources.
+5. **Fallback.** If no model answers, the app extracts relevant sentences from the notes, adds citations, and labels the answer **quoted notes**. If the message was conversational and no model answered, it uses a short in-character fallback instead of the office dump. Identity questions get a deterministic "chibi guide" reply before any model call.
 
 Requests are rate-limited in memory to **60 requests per IP per 10 minutes**. This is best-effort and resets on cold starts or across serverless instances.
 
@@ -155,7 +156,7 @@ npm run start
 - Manifest: `/manifest.webmanifest` (`app/manifest.ts`)
 - Service worker: `/sw.js`, registered in production by `components/PwaRegister.tsx`
 - Offline fallback: `/offline`
-- Icons: `public/icons/`, generated from the director chibi face by `npm run icons`
+- Icons: `public/icons/`, generated from the generic speech-bubble logo (`public/brand/adzu-ask-logo.svg`) by `npm run icons`
 - Install UI: `components/InstallButton.tsx`
 
 The service worker caches pages and static assets, but not `/api/*`. New questions need a connection. The current tab's conversation is kept in `sessionStorage`.
@@ -192,7 +193,6 @@ app/
 components/
   ChatExperience.tsx       chat shell, handoffs, voice, memory
   Chibi.tsx                five animated SVG chibis
-  DeskScene.tsx            vector office stage
   TeamSheet.tsx            all five staff profiles
   AdminDesk.tsx            staff content desk UI
   MarkdownText.tsx         safe local markdown renderer
@@ -216,7 +216,7 @@ scripts/make-icons.mjs     icon generator
 | `/api/chat` | POST | None (rate-limited) | Route a question and generate an answer. |
 | `/api/ingest?preview=1` | POST | `x-admin-key` | Extract text from a file without saving. |
 | `/api/ingest` | POST | `x-admin-key` | Save a note (JSON or multipart). |
-| `/api/kb` | GET | Optional `x-admin-key` | Public library; admin `?full=1` includes drafts and full text. |
+| `/api/kb` | GET | Optional `x-admin-key` | Public library; `?full=1` requires a valid admin key (401 otherwise) and includes drafts and full text. |
 | `/api/kb` | PATCH | `x-admin-key` | Edit a note, change status, or publish/unpublish. |
 | `/api/kb?id=...` | DELETE | `x-admin-key` | Remove a note. |
 | `/api/gaps` | GET/PATCH/DELETE | `x-admin-key` | Read, resolve, or dismiss unanswered questions. |
@@ -226,11 +226,11 @@ scripts/make-icons.mjs     icon generator
 
 ## Art and animation
 
-The chibis are **hand-authored SVG**, not generated raster images. That was deliberate: SVG keeps the faces crisp at every size, lets the same art work as a message avatar and a full stage portrait, and makes the animations possible without video or sprite sheets.
+The chibis are **hand-authored SVG**, not generated raster images. That was deliberate: SVG keeps the faces crisp at every size, lets the same art work as the inline chat avatar, and makes the animations possible without video or sprite sheets.
 
 Each character has a layered SVG with a distinct face shape, eyes, brows, nose, mouth, hairline, outfit, and accessories. CSS drives the idle breathing, blinking, hair sway, ponytail/bun sway, plant sway, and the talking mouth. `prefers-reduced-motion` turns the animation off.
 
-The PWA icons are rendered from the same director face with `sharp` in `scripts/make-icons.mjs`.
+The PWA icons are rendered from the generic AdZU Ask speech-bubble logo with `sharp` in `scripts/make-icons.mjs`.
 
 ---
 

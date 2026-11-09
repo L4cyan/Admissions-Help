@@ -73,7 +73,10 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
       nodes.push(<code key={key}>{token.slice(1, -1)}</code>);
     } else if (/^\[\d+\]$/.test(token)) {
       nodes.push(
-        <sup key={key} className="mx-0.5 inline-flex items-center rounded-full bg-gold-100 px-1.5 py-0.5 text-[9px] font-bold text-gold-800">
+        <sup
+          key={key}
+          className="ml-0.5 align-super text-[9px] font-bold leading-none text-gold-700"
+        >
           {token}
         </sup>,
       );

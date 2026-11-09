@@ -4,7 +4,6 @@ import type {
   DocumentStatus,
   KBDocument,
   KnowledgeBase,
-  StaffId,
 } from "./types";
 
 const BLOB_PREFIX = "adzu-ask";
@@ -227,15 +226,4 @@ export function kbStats(kb: KnowledgeBase) {
           ? "Free AI (no key)"
           : "Notes only",
   };
-}
-
-export function staffLabel(id: StaffId): string {
-  const labels: Record<StaffId, string> = {
-    director: "Ma'am Jen",
-    rose: "Ate Rose",
-    cris: "Ate Cris",
-    sherry: "Ate Sherry",
-    marilou: "Ate Marilou",
-  };
-  return labels[id];
 }
