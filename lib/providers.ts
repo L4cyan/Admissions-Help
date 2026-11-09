@@ -142,6 +142,7 @@ function cleanReply(reply: string, maxSources: number): string {
       );
       return indexes.map((number) => `[${number}]`).join("");
     })
+    .replace(/\[(?![0-9]+\])[^\]\n]{1,40}\](?!\()/g, "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
