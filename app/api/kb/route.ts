@@ -173,18 +173,20 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Document id required." }, { status: 400 });
   }
 
-  const before = await getKB({ fresh: true });
-  if (!before.documents.some((doc) => doc.id === id)) {
-    return NextResponse.json({ error: "Document not found." }, { status: 404 });
+  try {
+    const kb = await removeDocument(id);
+    return NextResponse.json(
+      {
+        ok: true,
+        stats: kbStats(kb),
+        documents: kb.documents.map((doc) => documentMeta(doc, true)),
+      },
+      { headers: ADMIN_CACHE },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not delete.";
+    const status = message.includes("not found") ? 404 : 500;
+    console.error("[api/kb DELETE]", error);
+    return NextResponse.json({ error: message }, { status });
   }
-
-  const kb = await removeDocument(id);
-  return NextResponse.json(
-    {
-      ok: true,
-      stats: kbStats(kb),
-      documents: kb.documents.map((doc) => documentMeta(doc, true)),
-    },
-    { headers: ADMIN_CACHE },
-  );
 }

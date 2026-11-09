@@ -151,14 +151,32 @@ export async function addDocument(doc: KBDocument): Promise<KnowledgeBase> {
   return next;
 }
 
+/**
+ * Blob writes can take a moment to appear in a fresh read. Admin actions such
+ * as publish or delete happen right after an upload, so retry briefly before
+ * declaring the document missing.
+ */
+async function readFreshWithDocument(
+  id: string,
+): Promise<{ kb: KnowledgeBase; document?: KBDocument }> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const kb = await getKB({ fresh: true });
+    const document = kb.documents.find((doc) => doc.id === id);
+    if (document) return { kb, document };
+    if (attempt < 4) {
+      await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+    }
+  }
+  return { kb: await getKB({ fresh: true }) };
+}
+
 export async function updateDocument(
   id: string,
   patch: Partial<
     Pick<KBDocument, "title" | "category" | "sourceUrl" | "text" | "status">
   >,
 ): Promise<KnowledgeBase> {
-  const kb = await getKB({ fresh: true });
-  const existing = kb.documents.find((doc) => doc.id === id);
+  const { kb, document: existing } = await readFreshWithDocument(id);
   if (!existing) throw new Error("Document not found.");
 
   const next: KnowledgeBase = {
@@ -178,7 +196,8 @@ export async function updateDocument(
 }
 
 export async function removeDocument(id: string): Promise<KnowledgeBase> {
-  const kb = await getKB({ fresh: true });
+  const { kb, document: existing } = await readFreshWithDocument(id);
+  if (!existing) throw new Error("Document not found.");
   const next: KnowledgeBase = {
     ...kb,
     documents: kb.documents.filter((doc) => doc.id !== id),
