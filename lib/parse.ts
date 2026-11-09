@@ -36,6 +36,7 @@ function jsonToText(value: unknown): string {
 export async function extractTextFromFile(file: File): Promise<{
   text: string;
   kind: string;
+  pages?: number;
 }> {
   if (file.size > MAX_FILE_BYTES) {
     throw new ParseError(
@@ -63,7 +64,11 @@ export async function extractTextFromFile(file: File): Promise<{
         "SCANNED_PDF",
       );
     }
-    return { text: cleaned.slice(0, MAX_TEXT_CHARS), kind: "pdf" };
+    return {
+      text: cleaned.slice(0, MAX_TEXT_CHARS),
+      kind: "pdf",
+      pages: pdf.numPages,
+    };
   }
 
   if (

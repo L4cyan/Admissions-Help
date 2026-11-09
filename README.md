@@ -1,45 +1,132 @@
 # AdZU Ask
 
-**AdZU Ask** is an unofficial, student-built chibi guide to college admissions and scholarships at **Ateneo de Zamboanga University (AdZU)**. Prospective students, parents, and scholars ask questions in plain language; answers come only from a curated knowledge base of official AdZU pages, forms, and staff-uploaded notes, with numbered source citations.
+**One chat for Ateneo de Zamboanga University college admissions and scholarships.** Ask in plain language; the right staff guide picks it up automatically, and every answer points back to the official notes it came from.
 
-Built with Next.js 15 (App Router), React 19, TypeScript, and Tailwind CSS. It is installable as a PWA.
+Built with Next.js 15 (App Router), React 19, TypeScript, and Tailwind CSS. Installable as a PWA.
 
-> **Not the university.** AdZU Ask cannot approve an application, reserve a slot, decide scholarship eligibility, or speak officially for AdZU. Always confirm requirements, deadlines, fees, and eligibility with the College Admissions & Aid Office.
+> **Not the university.** AdZU Ask is an unofficial, student-built guide. The chibi guides are illustrations, not live staff. They cannot approve an application, reserve a slot, decide scholarship eligibility, or speak officially for AdZU. Confirm requirements, fees, deadlines, and eligibility with the College Admissions & Aid Office.
+
+---
+
+## The team
+
+The five guides are based on the people listed on the official [College Admissions & Aid Office page](https://adzu.edu.ph/about-us/admissions-aid/). Names, roles, and assignments can change; confirm with the office.
+
+| Guide | Full name | Role | Desk |
+| --- | --- | --- | --- |
+| **Ma'am Jen** | Jennifer G. Reyes | Director, College Admissions & Aid Office | Both |
+| **Ate Sherry** | Sherry Gloria A. Lim | Admissions · CET Test Coordinator | Admissions |
+| **Ate Marilou** | Marilou Pong | Admissions & enrollment | Admissions |
+| **Ate Rose** | Rose Jasmine Lumigis | Scholarships & financial aid | Scholarships |
+| **Ate Cris** | Crizel P. Cardenas | Scholarships & ASAA | Scholarships |
+
+The public chat opens with Ma'am Jen. When you ask a question, a fast keyword-and-context router hands you to the right person. The handoff is visible in the transcript, and the stage chibi changes to match.
+
+The staff directory is also in the knowledge base, so questions like "who is the director?" or "who handles scholarships?" can be answered with a citation.
 
 ---
 
 ## Features
 
-- **Landing page** (`/`) with the hand-drawn **director / welcome chibi**, two track cards, popular questions, official source links, and a clear unofficial-project disclaimer.
-- **Two chat desks**:
-  - `/chat/admissions` - CET, test permits, freshman and transferee requirements, enrollment, office location.
-  - `/chat/scholarships` - grant types, application requirements, financial aid, summer coverage, where to submit.
-- **Cited answers** - retrieval runs over the knowledge base, the model is instructed to answer only from the retrieved passages, and each factual claim is cited as `[1]`, `[2]`, etc. A collapsible **Sources** panel shows the matching documents. Answers cite up to four sources.
-- **Quoted-notes fallback** - if no AI provider is configured or every provider fails, the app returns extractive quotes from the best-matching notes (still cited) instead of guessing.
-- **Chat conveniences** - suggested questions, in-tab conversation memory (`sessionStorage`), deep links such as `/chat/admissions?q=...`, copy answer, read-aloud with the browser speech API, new-chat reset, and desk switching.
-- **Staff content desk** (`/admin`) - passcode gate, multi-file upload or pasted text, title/category/source URL, duplicate detection, searchable library, JSON export, delete, and storage/AI status badges.
-- **Document ingestion** - PDF, DOCX, TXT, MD/Markdown, CSV, JSON, HTML, XML, and images (OCR in the browser with Tesseract.js).
-- **PWA** - web app manifest, install button (including iOS "Add to Home Screen" instructions), service worker, offline page, and generated icons.
+- **Chat first, no lane picker.** `/` is the chat. The composer is focused, there are no forms to start, and the director greets you immediately.
+- **Automatic desk handoff.** Admissions questions go to Ate Sherry (CET, permits, schedules) or Ate Marilou (freshman, transferee, enrollment). Scholarship questions go to Ate Rose (grants, financial aid) or Ate Cris (applications, renewals, deadlines). Ma'am Jen handles office questions, staff questions, and anything unclear.
+- **Chibi stage.** The active guide appears behind a desk with a speech bubble that updates as they talk. The SVG chibis blink, breathe, sway, and move their mouths while answering.
+- **Cited answers.** Retrieval runs over the knowledge base; the model answers only from retrieved passages; citations look like `[1]`, `[2]`. A collapsible **Sources** panel shows the official page or file.
+- **Real AI, with a fallback.** The app can use a local Ollama model, a free Gemini/OpenRouter/Groq key, or the keyless Pollinations free tier. If every model is unavailable or rate-limited, it returns **quoted notes** and labels the answer, rather than guessing.
+- **Fast chat conveniences.** Enter to send, Shift+Enter for a new line, read-aloud per answer, copy, new chat, session-tab memory, and deep links such as `/?q=How%20do%20I%20apply...`.
+- **Team sheet.** See all five people, their full names, roles, and what they handle.
+- **Staff content desk.** Passcode gate; guided note builder; PDF/DOCX/text upload with an editable preview; publish or save as draft; searchable library with edit, publish/unpublish, delete, and JSON export; and an **Info gaps** queue of questions the notes could not answer.
+- **PWA.** Manifest, service worker, offline page, install prompt, and generated icons.
 
 ---
 
-## Tech stack
+## How a question is answered
 
-| Layer | Choice |
-| --- | --- |
-| Framework | Next.js 15.5 (App Router, route handlers) |
-| UI | React 19, Tailwind CSS 3.4, lucide-react |
-| PDF parsing | `unpdf` |
-| DOCX parsing | `mammoth` |
-| Image OCR | `tesseract.js` (browser, English) |
-| Storage | local `data/kb.json` or Vercel Blob |
-| Icons | custom SVG chibis + `sharp` icon generation |
+1. **Route.** `lib/staff.ts` scores the question against admissions and scholarship language. Follow-ups stay on the current desk. If the question is about the office or people, Ma'am Jen takes it.
+2. **Retrieve.** `lib/kb.ts` tokenizes the knowledge base, scores chunks with a TF-IDF-style lexical search, weights the selected desk, and returns up to six chunks and four source records. Draft notes are excluded.
+3. **Answer.** The selected staff persona gets a system prompt with hard rules: use only the retrieved context, cite every factual claim, never promise a slot or award, and defer to the office for a specific case.
+4. **Validate citations.** The reply is cleaned of emojis, stage directions, smart quotes, and citations that point outside the retrieved sources.
+5. **Fallback.** If no model answers, the app extracts relevant sentences from the notes, adds citations, and labels the answer **quoted notes**.
+
+Requests are rate-limited in memory to **60 requests per IP per 10 minutes**. This is best-effort and resets on cold starts or across serverless instances.
+
+---
+
+## AI setup (free by default)
+
+The app works without any API key. It tries providers in this order and skips any without credentials:
+
+1. Custom OpenAI-compatible endpoint (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`)
+2. Google Gemini (`GEMINI_API_KEY`, `GEMINI_MODEL`)
+3. OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`)
+4. Groq (`GROQ_API_KEY`, `GROQ_MODEL`)
+5. Local Ollama (`OLLAMA_BASE_URL`, `OLLAMA_MODEL`)
+6. **Pollinations free tier** (`FREE_AI=on`, `POLLINATIONS_MODEL=openai-fast`) — no key
+7. Quoted notes
+
+### What "free" means in practice
+
+- **Pollinations** is keyless and works on a fresh deployment, but the anonymous tier is shared and rate-limited (at the time of writing, roughly one reply per 45 seconds per IP). When it is throttled, the app falls back to quoted notes. This is the zero-setup path.
+- **Ollama** is the best local option. Set `OLLAMA_BASE_URL=http://127.0.0.1:11434` and `OLLAMA_MODEL=gemma3:4b` (or `llama3.1:8b`). The app only tries Ollama when the URL is set, so a Vercel deployment does not wait on localhost.
+- **For a public deployment**, add one free key. Google AI Studio's free Gemini tier is the fastest path: <https://aistudio.google.com/apikey>. OpenRouter and Groq free tiers also work.
+- The staff desk shows the active AI mode (`AI connected`, `Free AI (no key)`, or `Notes only`).
+
+### Environment variables
+
+Copy `.env.example` to `.env.local`. All AI variables are server-side.
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `ADMIN_PASSCODE` | Yes in production | Passcode for `/admin` and admin API calls. |
+| `GEMINI_API_KEY` | Recommended | Google AI Studio key. Free tier. |
+| `GEMINI_MODEL` | No | Defaults to `gemini-3.5-flash-lite`. |
+| `OPENROUTER_API_KEY` | No | OpenRouter key (free models supported). |
+| `OPENROUTER_MODEL` | No | Defaults to a free model. |
+| `GROQ_API_KEY` | No | Groq key. |
+| `GROQ_MODEL` | No | Defaults to `openai/gpt-oss-120b`. |
+| `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` | No | Any OpenAI-compatible endpoint; all three must be set. |
+| `OLLAMA_BASE_URL` | No | Local Ollama base URL. Leave empty on Vercel. |
+| `OLLAMA_MODEL` | No | Defaults to `gemma3:4b`. |
+| `FREE_AI` | No | Set `off` to disable the Pollinations fallback. |
+| `POLLINATIONS_MODEL` | No | Defaults to `openai-fast`. |
+| `BLOB_READ_WRITE_TOKEN` | Recommended on Vercel | Persistent KB/gap storage via Vercel Blob. |
+| `NEXT_PUBLIC_SITE_URL` | No | Canonical site URL for metadata. |
+
+> **Privacy note:** free hosted models may retain messages. Don't paste confidential documents into the public chat. The staff desk is the place for internal notes.
+
+---
+
+## Staff content desk
+
+Open `/admin` and enter the passcode.
+
+- **Guided note** — answer a real student question with a title, desk, owner, short answer, steps, requirements, fee/deadline, and source URL. The app composes a clean note for retrieval. This is the recommended way to add a new FAQ.
+- **Upload a file** — PDF (selectable text), DOCX, TXT, MD, CSV, JSON, HTML, or an image (OCR in the browser). The extracted text is shown in an editable preview before anything is saved. Scanned PDFs with no selectable text are rejected; upload page images instead so OCR can run.
+- **Paste text** — for memos, announcements, or copied official text.
+- **Publish or draft** — published notes are used by the chat immediately. Drafts are hidden from retrieval and the public API.
+- **Library** — search titles and full text, filter by desk or status, edit the full text, publish/unpublish, delete, and export JSON.
+- **Info gaps** — every question that the chat could not answer is logged (emails and phone numbers redacted). Open one and draft a note directly from it.
+- **Team** — the five staff profiles and office contact details.
+
+Files are limited to **4 MB** and **300,000 characters** of extracted text. Duplicate text in the same desk is rejected. The Blob object is public; don't upload confidential material.
+
+---
+
+## Storage
+
+| Mode | When | Behavior |
+| --- | --- | --- |
+| `file` | Local development, no Blob token | Reads/writes `data/kb.json` and `data/gaps.json` (gitignored). Falls back to `data/seed.ts` if missing. |
+| `blob` | `BLOB_READ_WRITE_TOKEN` is set | Reads/writes `adzu-ask/kb.json` and `adzu-ask/gaps.json` in Vercel Blob. |
+| `readonly` | On Vercel with no Blob token | Serves the seed notes; uploads/deletes are rejected. |
+
+`data/seed.ts` is the committed starter knowledge base (official pages, requirements, staff directory, contacts). `data/kb.json` is gitignored, so notes added locally are not deployed automatically. Add them through `/admin` on production or maintain the seed file as code.
 
 ---
 
 ## Local setup
 
-**Requirements:** Node.js 20 LTS or newer (Next.js 15 requires Node 18.18+), and npm.
+**Requirements:** Node.js 20 LTS or newer and npm. Optional: Ollama and a model (for local AI), Tesseract OCR runs in the browser.
 
 ```powershell
 npm install
@@ -49,11 +136,11 @@ npm run dev
 
 On macOS/Linux use `cp .env.example .env.local` instead. Open <http://localhost:3000>. The staff desk is at <http://localhost:3000/admin>.
 
-The app runs without any environment variables in development: the built-in seed notes are used and the admin passcode falls back to `adzu-admin`. If you copy `.env.example` unchanged, the passcode is `change-me-please` until you edit it.
+If `ADMIN_PASSCODE` is unset in development, the passcode is `adzu-admin`. In production, an unset passcode fails closed (all admin requests are rejected).
 
 ### Production build (and PWA testing)
 
-The service worker is registered **only in production**, so `npm run dev` will not show install/offline behavior.
+The service worker is registered only in production, so `npm run dev` will not show install/offline behavior.
 
 ```powershell
 npm run icons   # only needed if public/icons is missing
@@ -61,130 +148,31 @@ npm run build
 npm run start
 ```
 
-`npm run icons` renders the PWA PNGs from the SVG chibi face using `sharp`.
-
----
-
-## Environment variables
-
-Copy `.env.example` to `.env.local` and fill in what you need. All variables are server-side except `NEXT_PUBLIC_SITE_URL`.
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `ADMIN_PASSCODE` | Yes in production | Shared passcode for `/admin` and admin API calls. **Change it before deploying.** |
-| `AI_BASE_URL` | No | Base URL of any OpenAI-compatible API. The app calls `${AI_BASE_URL}/chat/completions`. |
-| `AI_API_KEY` | No | Key for the custom OpenAI-compatible endpoint. |
-| `AI_MODEL` | No | Model name for the custom endpoint. |
-| `OPENROUTER_API_KEY` | No | OpenRouter key. |
-| `OPENROUTER_MODEL` | No | Defaults to `google/gemma-4-31b-it:free`. |
-| `GEMINI_API_KEY` | No | Google Gemini API key. |
-| `GEMINI_MODEL` | No | Defaults to `gemini-3.8-flash`. |
-| `GROQ_API_KEY` | No | Groq API key. |
-| `GROQ_MODEL` | No | Defaults to `openai/gpt-oss-120b`. |
-| `BLOB_READ_WRITE_TOKEN` | Recommended on Vercel | Enables persistent uploads in Vercel Blob. Without it, a Vercel deployment is read-only for staff changes. |
-| `NEXT_PUBLIC_SITE_URL` | No | Canonical site URL used for metadata/Open Graph. Defaults to `https://adzu-ask.vercel.app`. Set it to your real domain. |
-
-`AI_BASE_URL`, `AI_API_KEY`, and `AI_MODEL` must all be set for the custom provider to be considered.
-
-### Admin passcode
-
-- **Local development:** if `ADMIN_PASSCODE` is unset, the passcode is `adzu-admin`. If you copy `.env.example` as-is, it is `change-me-please`.
-- **Production:** set a long, random `ADMIN_PASSCODE`. If it is unset in production, all admin requests are rejected (fail closed).
-- The browser stores the passcode in `sessionStorage` for the tab and sends it as the `x-admin-key` header. Locking the desk clears it.
-
----
-
-## How answers are produced
-
-1. The question is matched against the knowledge base with a lightweight lexical (TF-IDF-style) search. Results are weighted toward the selected desk (`admissions` or `scholarships`), with `general` notes also eligible.
-2. The best passages are packed into a context block; up to six chunks and four source records are used.
-3. Small talk ("hi", "thanks", etc.) is answered locally without an AI call. If nothing relevant is found, the guide says so and gives the Admissions & Aid Office contact details.
-4. Otherwise, the app tries the configured AI providers **in this order**, skipping any without credentials:
-
-   **custom OpenAI-compatible -> OpenRouter -> Gemini -> Groq -> quoted-notes mode**
-
-   Each provider gets a 30-second timeout. Errors, empty replies, and replies shorter than 12 characters are ignored and the next provider is tried.
-5. If every provider fails, the app falls back to **quoted-notes mode**: it extracts relevant sentences directly from the retrieved notes, adds citations, and labels the answer "quoted notes" in the UI.
-
-Chat requests are rate-limited in memory to **40 requests per IP per 10 minutes**. This is best-effort and resets on cold starts or across multiple serverless instances.
-
-The relevant implementation is in `lib/providers.ts`, `lib/kb.ts`, and `lib/text.ts`.
-
----
-
-## Admin content desk
-
-Open `/admin`, enter the admin passcode, and use **Feed the notes**.
-
-### Adding content
-
-- **Upload files** - drag and drop or choose files. Each file is sent in its own request.
-- **Paste text** - paste a memo, FAQ, announcement, or notes.
-
-Optional fields: title, desk (`admissions`, `scholarships`, or `general` / both), and a source URL (`http://` or `https://`). After ingestion, the document is chunked and available to the chat immediately.
-
-### Supported formats
-
-| Format | How it is handled |
-| --- | --- |
-| PDF | Text extracted on the server with `unpdf` (selectable text only). Scanned/image-only PDFs are rejected. |
-| DOCX | Text extracted on the server with `mammoth`. |
-| TXT, MD, Markdown, CSV | Read as UTF-8 text. |
-| JSON | Flattened into readable `key: value` text. |
-| HTML, HTM | Tags are stripped and text is kept. |
-| XML | Read as UTF-8 text (markup is kept). |
-| Images (PNG, JPEG, WebP, etc.) | OCR runs in the **browser** with Tesseract.js (English). Review or edit the extracted text before submitting. Images are never parsed on the server. |
-
-### Limits and behavior
-
-- **4 MB per file** (client and server), and **300,000 characters** of extracted text per document.
-- Pasted text must be at least 30 characters.
-- Identical text in the same category is rejected as a duplicate.
-- Scanned PDFs with little selectable text: upload the page images so OCR can run, or paste the text.
-- The library supports search, category filtering, full-text preview, source links, JSON export, and deletion.
-- Removing a document removes it from future retrieval immediately.
-
----
-
-## Storage
-
-The app has three storage modes:
-
-| Mode | When | Behavior |
-| --- | --- | --- |
-| `file` | Local development, no Blob token | Reads/writes `data/kb.json` (created on first save; gitignored). Falls back to `data/seed.ts` if the file is missing or invalid. |
-| `blob` | `BLOB_READ_WRITE_TOKEN` is set | Reads/writes `adzu-ask/kb.json` in Vercel Blob. The KB is cached in memory for about 4 seconds. |
-| `readonly` | On Vercel with no Blob token | The built-in seed notes are served, but uploads/deletes are rejected with a "read-only deployment" message. |
-
-`data/seed.ts` is the committed starter knowledge base (official AdZU pages and notes). `data/kb.json` is **gitignored**, so notes added locally are not deployed automatically. Add them again through `/admin` on production, or maintain the seed file as code.
-
-The Blob object is written with **public** access. Do not upload confidential, personal, or internal-only material; anyone with the URL can read the knowledge base JSON.
-
 ---
 
 ## PWA
 
-- Manifest: `/manifest.webmanifest` (`app/manifest.ts`).
-- Service worker: `/sw.js`, registered in production by `components/PwaRegister.tsx`.
-- Offline fallback: `/offline`.
-- Icons: `public/icons/` (generated by `npm run icons`).
-- Install UI: `components/InstallButton.tsx` (Chrome/Edge/Android prompt plus iOS Safari instructions).
+- Manifest: `/manifest.webmanifest` (`app/manifest.ts`)
+- Service worker: `/sw.js`, registered in production by `components/PwaRegister.tsx`
+- Offline fallback: `/offline`
+- Icons: `public/icons/`, generated from the director chibi face by `npm run icons`
+- Install UI: `components/InstallButton.tsx`
 
-The service worker caches pages and static assets, but **not** `/api/*` responses. New questions require a connection; the current tab's conversation is kept in `sessionStorage` and survives reloads in that tab.
+The service worker caches pages and static assets, but not `/api/*`. New questions need a connection. The current tab's conversation is kept in `sessionStorage`.
 
 ---
 
 ## Deploying to Vercel
 
-The short version: push the repo to GitHub, import it at <https://vercel.com/new>, set `ADMIN_PASSCODE`, optionally add at least one AI key, connect a Vercel Blob store (recommended), and deploy.
+1. Push the repo to GitHub.
+2. Import it at <https://vercel.com/new>.
+3. Set `ADMIN_PASSCODE` and at least one AI key (Gemini is enough for a good free default).
+4. Connect a Vercel Blob store and set `BLOB_READ_WRITE_TOKEN` so staff uploads persist.
+5. Deploy.
 
-Full step-by-step instructions - including CLI commands, Blob setup, verification, and troubleshooting - are in **[DEPLOY.md](./DEPLOY.md)**.
+Without a Blob store, a Vercel deployment runs in **read-only** mode: the seed notes work, but staff uploads do not persist. Vercel Functions have a request body limit of about **4.5 MB**; the app's own upload limit is **4 MB per file**.
 
-Important production notes:
-
-- Without `BLOB_READ_WRITE_TOKEN`, a Vercel deployment runs in **read-only** mode: the seed notes work, but staff uploads do not persist.
-- Vercel Functions have a request body limit of roughly **4.5 MB**; the app's own upload limit is **4 MB per file**.
-- Vercel's filesystem is ephemeral, which is why local `data/kb.json` is not used in production.
+Full step-by-step instructions are in **[DEPLOY.md](./DEPLOY.md)**.
 
 ---
 
@@ -192,27 +180,29 @@ Important production notes:
 
 ```text
 app/
-  page.tsx                 landing page
-  chat/[track]/page.tsx    admissions and scholarships chat
+  page.tsx                 the one chat
+  chat/[track]/page.tsx    old deep links -> /?desk=...
   admin/page.tsx           staff content desk
   offline/page.tsx         offline fallback
-  robots.ts / sitemap.ts   crawler rules and sitemap
-  api/chat/route.ts        answer generation
-  api/ingest/route.ts      document ingestion
-  api/kb/route.ts          knowledge-base list/delete
-  api/health/route.ts      status, stats, provider flags
+  api/chat/route.ts        route + answer
+  api/ingest/route.ts      preview, save, publish notes
+  api/kb/route.ts          library list/edit/delete
+  api/gaps/route.ts        unanswered-question queue
+  api/health/route.ts      status and provider flags
 components/
-  Chibi.tsx                five hand-built SVG chibi guides
-  ChatRoom.tsx             chat UI
-  AdminClient.tsx          admin UI, upload, OCR
-  ...
+  ChatExperience.tsx       chat shell, handoffs, voice, memory
+  Chibi.tsx                five animated SVG chibis
+  DeskScene.tsx            vector office stage
+  TeamSheet.tsx            all five staff profiles
+  AdminDesk.tsx            staff content desk UI
+  MarkdownText.tsx         safe local markdown renderer
 lib/
-  kb.ts                    retrieval and context building
-  providers.ts             provider fallback chain
-  parse.ts                 PDF/DOCX/text/image handling
-  storage.ts               local vs Vercel Blob persistence
-  auth.ts                  admin passcode check
-  ...
+  staff.ts                 staff profiles + fast desk routing
+  providers.ts             AI chain + citation checks
+  kb.ts                    retrieval + quoted-note fallback
+  gaps.ts                  redacted unanswered-question storage
+  storage.ts               local/Blob knowledge base
+  parse.ts                 PDF/DOCX/text extraction
 data/seed.ts               starter knowledge base
 public/sw.js               service worker
 public/icons/              generated PWA icons
@@ -223,22 +213,31 @@ scripts/make-icons.mjs     icon generator
 
 | Endpoint | Method | Auth | Purpose |
 | --- | --- | --- | --- |
-| `/api/chat` | POST | None (rate-limited) | Ask a question on a track. |
-| `/api/ingest` | POST | `x-admin-key` | Add a document by file or pasted text. |
-| `/api/kb` | GET | Optional `x-admin-key` (full text) | List documents and stats. |
-| `/api/kb?id=...` | DELETE | `x-admin-key` | Remove a document. |
-| `/api/health` | GET | None | Health, KB stats, chunk count, configured providers. |
+| `/api/chat` | POST | None (rate-limited) | Route a question and generate an answer. |
+| `/api/ingest?preview=1` | POST | `x-admin-key` | Extract text from a file without saving. |
+| `/api/ingest` | POST | `x-admin-key` | Save a note (JSON or multipart). |
+| `/api/kb` | GET | Optional `x-admin-key` | Public library; admin `?full=1` includes drafts and full text. |
+| `/api/kb` | PATCH | `x-admin-key` | Edit a note, change status, or publish/unpublish. |
+| `/api/kb?id=...` | DELETE | `x-admin-key` | Remove a note. |
+| `/api/gaps` | GET/PATCH/DELETE | `x-admin-key` | Read, resolve, or dismiss unanswered questions. |
+| `/api/health` | GET | None | Health, KB stats, chunk count, provider flags. |
 
 ---
 
-## A note on the art
+## Art and animation
 
-Image generation was unavailable when this project was built, so there are **no raster AI-generated character images**. All five chibis - the director/welcome guide plus two guides for each track - are hand-built SVG in `components/Chibi.tsx`. The PWA icons are rendered from the same face with `scripts/make-icons.mjs`.
+The chibis are **hand-authored SVG**, not generated raster images. That was deliberate: SVG keeps the faces crisp at every size, lets the same art work as a message avatar and a full stage portrait, and makes the animations possible without video or sprite sheets.
+
+Each character has a layered SVG with a distinct face shape, eyes, brows, nose, mouth, hairline, outfit, and accessories. CSS drives the idle breathing, blinking, hair sway, ponytail/bun sway, plant sway, and the talking mouth. `prefers-reduced-motion` turns the animation off.
+
+The PWA icons are rendered from the same director face with `sharp` in `scripts/make-icons.mjs`.
 
 ---
+
+## Disclaimer
+
+AdZU Ask is an unofficial project and is not affiliated with or endorsed by Ateneo de Zamboanga University. The chibi guides are illustrations of real staff names from the public AdZU directory, not the staff themselves. Always confirm requirements, fees, deadlines, and eligibility with the College Admissions & Aid Office.
 
 ## License
 
-MIT - see [LICENSE](./LICENSE).
-
-AdZU Ask is an unofficial project and is not affiliated with or endorsed by Ateneo de Zamboanga University.
+MIT — see [LICENSE](./LICENSE).

@@ -1,7 +1,17 @@
-import type { Chunk, ChatTurn, KnowledgeBase, Source, Track } from "./types";
+import type { StaffProfile } from "./staff";
+import type {
+  Chunk,
+  ChatTurn,
+  KnowledgeBase,
+  Source,
+  Track,
+} from "./types";
 import { chunkText, tokenize, truncate } from "./text";
 
 let chunkCache: { key: string; chunks: Chunk[] } | null = null;
+
+export const OFFICE_CONTACT =
+  "College Admissions & Aid Office — 9910871 local 2211/2212, +639277705888 / +639082613133, admissions@adzu.edu.ph. Scholarship papers: admissionsandaid@adzu.edu.ph.";
 
 export function buildChunks(kb: KnowledgeBase): Chunk[] {
   const key = `${kb.updatedAt}:${kb.documents.length}`;
@@ -9,6 +19,7 @@ export function buildChunks(kb: KnowledgeBase): Chunk[] {
 
   const chunks: Chunk[] = [];
   for (const doc of kb.documents) {
+    if (doc.status === "draft") continue;
     const parts = chunkText(doc.text);
     parts.forEach((text, index) => {
       chunks.push({
@@ -140,27 +151,34 @@ export function buildContext(chunks: Chunk[]): string {
 }
 
 const SMALL_TALK =
-  /^(hi|hello|hey|good (morning|afternoon|evening)|kumusta|kamusta|salamat|thank you|thanks|ok|okay|sure|yes|no|bye|goodbye|who are you|what can you do|help)\b/i;
+  /^(hi|hi po|hello|hello po|hey|good (morning|afternoon|evening)|kumusta|kamusta|musta|salamat|thank you|thanks|ok|okay|sure|yes|no|bye|goodbye|who are you|what can you do|help)\b/i;
 
 export function isSmallTalk(input: string): boolean {
   const text = input.trim();
-  return text.length < 36 && SMALL_TALK.test(text);
+  return text.length < 48 && SMALL_TALK.test(text);
 }
 
-export function smallTalkReply(track: Track): string {
-  if (track === "admissions") {
-    return "Hi! I'm the Admissions chibi guide. Ask me about the CET, test permits, enrollment requirements, or where to find the Admissions & Aid Office. What are you working on?";
+export function smallTalkReply(staff: StaffProfile): string {
+  if (staff.id === "director") {
+    return "Hi, future Atenista! I'm Ma'am Jen's chibi guide. Ask me anything about AdZU college admissions or scholarships — I'll bring in the right person from the office. What do you need help with?";
   }
-  return "Hello! I'm the Scholarships chibi guide. Ask me about the application form, requirements, grants, or where to submit your papers. What do you need help with?";
+  return `Hi! I'm ${staff.name}'s chibi guide. I can help with ${staff.handles
+    .slice(0, 3)
+    .map((item) => item.toLowerCase())
+    .join(", ")}. What do you need?`;
 }
 
-export function noContextReply(track: Track): string {
-  const office =
-    "You can confirm with the College Admissions & Aid Office: 9910871 local 2211 or 2212, +639277705888 / +639082613133, or admissions@adzu.edu.ph.";
-  if (track === "admissions") {
-    return `I don't have that in the official admissions notes I was given, and I don't want to guess about requirements or deadlines. ${office} You can also try asking about the CET, test permit, freshman or transferee requirements, or the office location.`;
-  }
-  return `I don't have that in the official scholarship notes I was given, and I don't want to guess about eligibility, amounts, or deadlines. ${office} For scholarship papers, email admissionsandaid@adzu.edu.ph. You can also ask about the application form, requirements, grant types, or summer coverage.`;
+export function noContextReply(staff: StaffProfile): string {
+  const desk =
+    staff.desk === "both"
+      ? "admissions or scholarships"
+      : staff.desk === "admissions"
+        ? "admissions"
+        : "scholarship";
+  return `I don't have that in the official ${desk} notes I was given, and I don't want to guess about requirements, fees, or deadlines. ${OFFICE_CONTACT} You can also try asking about ${staff.handles
+    .slice(0, 3)
+    .map((item) => item.toLowerCase())
+    .join(", ")}.`;
 }
 
 export function extractiveAnswer(chunks: Chunk[], query: string): string {
@@ -175,8 +193,10 @@ export function extractiveAnswer(chunks: Chunk[], query: string): string {
 
   const seen = new Set<string>();
   for (const chunk of chunks.slice(0, 3)) {
-    const sentences = chunk.text
-      .replace(/\s+/g, " ")
+    const prose = chunk.text
+      .replace(/\n\s*(\d+)\.\s+/g, "\n$1) ")
+      .replace(/\s+/g, " ");
+    const sentences = prose
       .split(/(?<=[.!?])\s+/)
       .map((sentence) => sentence.trim())
       .filter(
@@ -213,7 +233,7 @@ export function extractiveAnswer(chunks: Chunk[], query: string): string {
   }
 
   if (!points.length) return "";
-  return `Here's what our official AdZU notes say:\n\n${points.join(
+  return `Here's what the official AdZU notes say:\n\n${points.join(
     "\n",
   )}\n\nThese are quoted from the notes I was given. For a decision on your specific case, please confirm with the Admissions & Aid Office.`;
 }

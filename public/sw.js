@@ -1,8 +1,6 @@
-const VERSION = "adzu-ask-v1";
+const VERSION = "adzu-ask-v3";
 const CORE = [
   "/",
-  "/chat/admissions",
-  "/chat/scholarships",
   "/offline",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -65,8 +63,7 @@ self.addEventListener("fetch", (event) => {
 
   if (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/chibis/")
+    url.pathname.startsWith("/icons/")
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {

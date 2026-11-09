@@ -28,6 +28,7 @@ next-env.d.ts
 data/*.bak
 data/kb.local.json
 data/kb.json
+data/gaps.json
 
 # local QA screenshots
 screenshots/

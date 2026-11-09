@@ -1,12 +1,11 @@
 export type Track = "admissions" | "scholarships";
 export type Category = Track | "general";
 
-export type ChibiVariant =
-  | "director"
-  | "admissions-1"
-  | "admissions-2"
-  | "scholarships-1"
-  | "scholarships-2";
+/** The five people behind the desk. These IDs are also the chibi variants. */
+export type StaffId = "director" | "rose" | "cris" | "sherry" | "marilou";
+export type ChibiVariant = StaffId;
+
+export type DocumentStatus = "draft" | "published";
 
 export interface KBDocument {
   id: string;
@@ -14,6 +13,7 @@ export interface KBDocument {
   category: Category;
   sourceUrl?: string;
   sourceType?: "official-web" | "official-pdf" | "official-facebook" | "upload" | "note";
+  status?: DocumentStatus;
   addedAt: string;
   updatedAt?: string;
   text: string;
@@ -52,5 +52,18 @@ export interface ChatResult {
   sources: Source[];
   provider: string;
   track: Track;
+  staff: StaffId;
+  handoff: boolean;
   usedContext: boolean;
+}
+
+export interface Gap {
+  id: string;
+  question: string;
+  track: Track;
+  staff: StaffId;
+  count: number;
+  firstSeen: string;
+  lastSeen: string;
+  resolved?: boolean;
 }

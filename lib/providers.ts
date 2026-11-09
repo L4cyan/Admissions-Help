@@ -1,5 +1,5 @@
 import type { ChatResult, ChatTurn, Chunk, Source, Track } from "./types";
-import { TRACKS } from "./tracks";
+import type { StaffProfile } from "./staff";
 import {
   buildContext,
   extractiveAnswer,
@@ -12,39 +12,63 @@ import {
 const OFFICE =
   "College Admissions & Aid Office — 9910871 local 2211/2212, +639277705888 / +639082613133, admissions@adzu.edu.ph. Scholarship papers: admissionsandaid@adzu.edu.ph.";
 
-function systemPrompt(track: Track): string {
-  const config = TRACKS[track];
-  return `You are the AdZU ${config.label} chibi guide: a warm, cartoon assistant for Ateneo de Zamboanga University's College Admissions & Aid Office.
+const VOICE: Record<string, string> = {
+  director:
+    "Warm, steady, and welcoming — the person who makes sure nobody gets passed around. You see the whole office and hand people to the right teammate.",
+  rose:
+    "Soft, encouraging, and practical. You explain grants and financial aid like you are sitting beside the family, not reading a memo.",
+  cris:
+    "Organized, precise, and kind. You care about deadlines, complete documents, and the exact next step. You sound like the person who keeps the scholarship files in order.",
+  sherry:
+    "Upbeat and clear. You walk students through the CET one step at a time, especially test permits and schedules.",
+  marilou:
+    "Warm and grounded. You turn requirements into a simple checklist and make enrollment feel less overwhelming.",
+};
 
-Today is 9 November 2026. You are talking to a prospective student, parent, or scholar.
+function systemPrompt(staff: StaffProfile, track: Track): string {
+  const today = new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "long",
+    timeZone: "Asia/Manila",
+  }).format(new Date());
+  return `You are ${staff.name}'s chibi guide for the AdZU College Admissions & Aid Office. ${staff.name} is ${staff.fullName}, ${staff.role}. You are an illustrated guide inspired by them, not the real person. If someone asks, say you are the chibi guide.
 
 VOICE
-- Warm, encouraging, and direct. A light Filipino touch ("Salamat", "Hala", "po") is fine, but do not overdo it.
-- You are a chibi guide, not a real staff member. Never claim to be a person or to speak officially for AdZU.
-- Keep answers short: 2-4 short paragraphs or up to 4 bullets, under 180 words.
+${VOICE[staff.id] ?? "Warm, clear, and helpful."}
+A light Filipino touch ("Salamat", "po", "Hala") is fine, but do not overdo it.
+Keep answers short: 2-4 short paragraphs or up to 4 bullets, under 150 words.
+Do not write stage directions, actions in parentheses, or emotes. No emojis. Answer the question first, then add a short warm line if useful.
 
 HARD RULES
-1. Answer ONLY from the CONTEXT provided in the user message. Do not use outside knowledge, assumptions, or old memories.
-2. If the answer is not in the context, say you do not have it in the notes and give the office contact. Never invent a deadline, fee, requirement, amount, slot, or eligibility rule.
+1. Answer ONLY from the CONTEXT below. Do not use outside knowledge, assumptions, or old memories.
+2. If the answer is not in the context, say you do not have it in the official notes and give the office contact. Never invent a deadline, fee, requirement, amount, slot, or eligibility rule.
 3. Cite the numbered source after each factual claim, like [1] or [2]. Only cite numbers that appear in the context.
 4. Never promise admission, a scholarship, a slot, or approval. You may explain the process.
-5. If the question is outside admissions/scholarships, gently redirect.
+5. If the question is outside admissions/scholarships, gently redirect to the Admissions & Aid Office.
 6. Do not mention the words "CONTEXT" or "provided documents"; say "our notes" or "the official AdZU page".
 7. If the user sounds anxious, acknowledge it in one short sentence, then help.
-8. If a date, fee, or deadline in the notes may be outdated, say it should be confirmed with the office.
+8. Copy numbers, fees, dates, and phone numbers exactly as written in the context. Do not round, shorten, or reformat them.
+9. If a date, fee, or deadline in the notes may be outdated, say it should be confirmed with the office.
+10. Stay in your lane: this conversation is routed to the ${track} desk. If the question clearly belongs to the other desk, say who can help.
+11. Answer the specific question asked. Do not add a different process (for example, test-permit steps when the question is about enrollment) unless the user asks for it.
+
+Today is ${today}. You are talking to a prospective student, parent, or scholar.
 
 OFFICE CONTACT
 ${OFFICE}`;
 }
 
+function timeoutSignal(ms: number): AbortSignal {
+  return AbortSignal.timeout(Math.max(1000, ms));
+}
+
 async function fetchJson(
   url: string,
   init: RequestInit,
-  timeoutMs = 30000,
+  timeoutMs: number,
 ): Promise<unknown> {
   const response = await fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: timeoutSignal(timeoutMs),
   });
   if (!response.ok) {
     const body = await response.text().catch(() => "");
@@ -59,17 +83,79 @@ function textFromOpenAI(data: unknown): string {
   return choices?.[0]?.message?.content?.trim() ?? "";
 }
 
-function cleanReply(reply: string): string {
+function cleanReply(reply: string, maxSources: number): string {
   return reply
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\uFFFD/g, "")
     .replace(/^#+\s*/gm, "")
     .replace(/\*\*Context\*\*:?/gi, "")
+    .replace(/^\s*(answer|reply)\s*:\s*/i, "")
+    .replace(/^\s*\([^)\n]{1,80}\)\s*/gm, "")
+    .replace(/\s+([,.!?;:])/g, "$1")
+    .replace(/\[(\d+(?:\s*,\s*\d+)+)\]/g, (_match: string, group: string) =>
+      group
+        .split(",")
+        .map((part) => `[${part.trim()}]`)
+        .join(""),
+    )
+    .replace(/\[(\d+)\]/g, (match, number: string) => {
+      const index = Number(number);
+      return index >= 1 && index <= maxSources ? match : "";
+    })
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim()
-    .slice(0, 2400);
+    .slice(0, 1600);
 }
 
 function historyForModel(history: ChatTurn[]): ChatTurn[] {
   return normalizeHistory(history).slice(-6);
+}
+
+function normalizeNumber(value: string): string {
+  return value.replace(/,/g, "").replace(/\.0+$/, "").replace(/^0+(?=\d)/, "");
+}
+
+/**
+ * Fees and deadlines are the highest-risk hallucinations. If a sentence
+ * mentions money/dates and contains a number that is not in the retrieved
+ * context, drop that sentence and tell the student to confirm with the office.
+ */
+function guardNumbers(reply: string, context: string): string {
+  const contextNumbers = new Set(
+    [...context.matchAll(/\b\d[\d,]*(?:\.\d+)?\b/g)].map((match) =>
+      normalizeNumber(match[0]),
+    ),
+  );
+  const sentences = reply.split(/(?<=[.!?])\s+/);
+  let removed = false;
+  const kept = sentences.filter((sentence) => {
+    const risky =
+      /\b(fee|fees|tuition|amount|cost|pay|payment|php|₱|deadline|due|schedule|slot)\b/i.test(
+        sentence,
+      );
+    if (!risky) return true;
+    const numbers = [...sentence.matchAll(/\b\d[\d,]*(?:\.\d+)?\b/g)].map(
+      (match) => normalizeNumber(match[0]),
+    );
+    const bad = numbers.some((number) => !contextNumbers.has(number));
+    if (bad) removed = true;
+    return !bad;
+  });
+  if (!removed) return reply;
+  const safe = kept.join(" ").trim();
+  return `${safe}${safe ? "\n\n" : ""}Please confirm the current fee or deadline with the Admissions & Aid Office.`;
+}
+
+function badReply(reply: string): boolean {
+  return (
+    reply.length < 12 ||
+    /\b(User|Response) Safety:/i.test(reply) ||
+    /^(as an ai|i cannot|i can't assist)/i.test(reply)
+  );
 }
 
 async function askOpenAICompatible(
@@ -77,61 +163,34 @@ async function askOpenAICompatible(
   history: ChatTurn[],
   question: string,
   context: string,
+  timeoutMs: number,
 ): Promise<string> {
   const base = process.env.AI_BASE_URL?.replace(/\/$/, "");
   const key = process.env.AI_API_KEY;
   const model = process.env.AI_MODEL;
   if (!base || !key || !model) return "";
 
-  const data = await fetchJson(`${base}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${key}`,
+  const data = await fetchJson(
+    `${base}/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.25,
+        max_tokens: 700,
+        messages: [
+          { role: "system", content: system },
+          ...historyForModel(history),
+          { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
+        ],
+      }),
     },
-    body: JSON.stringify({
-      model,
-      temperature: 0.35,
-      max_tokens: 900,
-      messages: [
-        { role: "system", content: system },
-        ...historyForModel(history),
-        { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
-      ],
-    }),
-  });
-  return textFromOpenAI(data);
-}
-
-async function askOpenRouter(
-  system: string,
-  history: ChatTurn[],
-  question: string,
-  context: string,
-): Promise<string> {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) return "";
-  const model = process.env.OPENROUTER_MODEL || "google/gemma-4-31b-it:free";
-
-  const data = await fetchJson("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${key}`,
-      "HTTP-Referer": "https://adzu-ask.vercel.app",
-      "X-Title": "AdZU Ask",
-    },
-    body: JSON.stringify({
-      models: [model, "openrouter/free"],
-      temperature: 0.35,
-      max_tokens: 900,
-      messages: [
-        { role: "system", content: system },
-        ...historyForModel(history),
-        { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
-      ],
-    }),
-  });
+    timeoutMs,
+  );
   return textFromOpenAI(data);
 }
 
@@ -140,10 +199,16 @@ async function askGemini(
   history: ChatTurn[],
   question: string,
   context: string,
+  timeoutMs: number,
 ): Promise<string> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return "";
-  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const models = [
+    process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+    "gemini-flash-lite-latest",
+    "gemini-2.5-flash-lite",
+    "gemini-3.6-flash",
+  ];
 
   const contents = [
     ...historyForModel(history).map((turn) => ({
@@ -162,30 +227,98 @@ async function askGemini(
     });
   }
 
-  const data = (await fetchJson(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-goog-api-key": key,
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        generationConfig: { temperature: 0.35, maxOutputTokens: 900 },
-      }),
-    },
-  )) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
+  const started = Date.now();
+  for (const model of models) {
+    if (Date.now() - started > timeoutMs - 1200) break;
+    try {
+      const data = (await fetchJson(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-goog-api-key": key,
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: system }] },
+            contents,
+            generationConfig: {
+              temperature: 0.25,
+              maxOutputTokens: model.includes("lite") ? 500 : 700,
+            },
+          }),
+        },
+        Math.min(8000, timeoutMs - (Date.now() - started)),
+      )) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+      };
+      const text =
+        data.candidates?.[0]?.content?.parts
+          ?.filter((part) => !part.thought)
+          .map((part) => part.text ?? "")
+          .join("")
+          .trim() ?? "";
+      if (text) return text;
+    } catch (error) {
+      console.error(
+        `[chat] gemini ${model} failed:`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+  return "";
+}
 
-  return (
-    data.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text ?? "")
-      .join("")
-      .trim() ?? ""
-  );
+async function askOpenRouter(
+  system: string,
+  history: ChatTurn[],
+  question: string,
+  context: string,
+  timeoutMs: number,
+): Promise<string> {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return "";
+  const models = [
+    process.env.OPENROUTER_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "google/gemma-4-31b-it:free",
+    "openrouter/free",
+  ];
+
+  for (const model of models) {
+    try {
+      const data = await fetchJson(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${key}`,
+            "HTTP-Referer": "https://adzu-ask.vercel.app",
+            "X-Title": "AdZU Ask",
+          },
+          body: JSON.stringify({
+            model,
+            temperature: 0.25,
+            max_tokens: 700,
+            messages: [
+              { role: "system", content: system },
+              ...historyForModel(history),
+              { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
+            ],
+          }),
+        },
+        timeoutMs,
+      );
+      const reply = textFromOpenAI(data);
+      if (!badReply(reply)) return reply;
+    } catch (error) {
+      console.error(
+        `[chat] openrouter ${model} failed:`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+  return "";
 }
 
 async function askGroq(
@@ -193,80 +326,194 @@ async function askGroq(
   history: ChatTurn[],
   question: string,
   context: string,
+  timeoutMs: number,
 ): Promise<string> {
   const key = process.env.GROQ_API_KEY;
   if (!key) return "";
   const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
-  const data = await fetchJson("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${key}`,
+  const data = await fetchJson(
+    "https://api.groq.com/openai/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.25,
+        max_tokens: 700,
+        messages: [
+          { role: "system", content: system },
+          ...historyForModel(history),
+          { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
+        ],
+      }),
     },
-    body: JSON.stringify({
-      model,
-      temperature: 0.35,
-      max_tokens: 900,
-      messages: [
-        { role: "system", content: system },
-        ...historyForModel(history),
-        { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
-      ],
-    }),
-  });
+    timeoutMs,
+  );
   return textFromOpenAI(data);
+}
+
+/**
+ * Local Ollama, for development or a self-hosted desk. It is only tried when
+ * OLLAMA_BASE_URL is set, so a Vercel deployment does not wait on localhost.
+ */
+async function askOllama(
+  system: string,
+  history: ChatTurn[],
+  question: string,
+  context: string,
+  timeoutMs: number,
+): Promise<string> {
+  const base = process.env.OLLAMA_BASE_URL?.replace(/\/$/, "");
+  if (!base) return "";
+  const model = process.env.OLLAMA_MODEL || "gemma3:4b";
+
+  const data = (await fetchJson(
+    `${base}/api/chat`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        messages: [
+          { role: "system", content: system },
+          ...historyForModel(history),
+          { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
+        ],
+        options: { temperature: 0.25, num_predict: 500 },
+      }),
+    },
+    timeoutMs,
+  )) as { message?: { content?: string } };
+  return data.message?.content?.trim() ?? "";
+}
+
+/**
+ * Keyless free text model. Pollinations serves an OpenAI-compatible endpoint
+ * and does not need an account, which means the chat still has a brain on a
+ * fresh deployment with no env vars.
+ */
+async function askPollinations(
+  system: string,
+  history: ChatTurn[],
+  question: string,
+  context: string,
+  timeoutMs: number,
+): Promise<string> {
+  if (process.env.FREE_AI === "off") return "";
+  const models = [process.env.POLLINATIONS_MODEL || "openai-fast"];
+
+  for (const model of models) {
+    try {
+      const data = await fetchJson(
+        "https://text.pollinations.ai/openai",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            model,
+            temperature: 0.25,
+            max_tokens: 700,
+            referrer: "adzu-ask",
+            messages: [
+              { role: "system", content: system },
+              ...historyForModel(history),
+              { role: "user", content: `QUESTION: ${question}\n\nCONTEXT:\n${context}` },
+            ],
+          }),
+        },
+        timeoutMs,
+      );
+      const reply = textFromOpenAI(data);
+      if (!badReply(reply)) return reply;
+    } catch (error) {
+      console.error(
+        `[chat] pollinations ${model} failed:`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+  return "";
+}
+
+export function aiMode(): "configured" | "free" | "off" {
+  if (
+    (process.env.AI_BASE_URL && process.env.AI_API_KEY && process.env.AI_MODEL) ||
+    process.env.GEMINI_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
+    process.env.GROQ_API_KEY ||
+    process.env.OLLAMA_BASE_URL
+  ) {
+    return "configured";
+  }
+  return process.env.FREE_AI === "off" ? "off" : "free";
 }
 
 export async function answerQuestion(input: {
   track: Track;
+  staff: StaffProfile;
   question: string;
   history: ChatTurn[];
   chunks: Chunk[];
   sources: Source[];
 }): Promise<ChatResult> {
-  const { track, question, history, chunks, sources } = input;
+  const { track, staff, question, history, chunks, sources } = input;
 
   if (isSmallTalk(question)) {
     return {
-      reply: smallTalkReply(track),
+      reply: smallTalkReply(staff),
       sources: [],
       provider: "guide",
       track,
+      staff: staff.id,
+      handoff: false,
       usedContext: false,
     };
   }
 
   if (!chunks.length) {
     return {
-      reply: noContextReply(track),
+      reply: noContextReply(staff),
       sources: [],
       provider: "guide",
       track,
+      staff: staff.id,
+      handoff: false,
       usedContext: false,
     };
   }
 
   const context = buildContext(chunks);
-  const system = systemPrompt(track);
+  const system = systemPrompt(staff, track);
+  const deadline = Date.now() + 40_000;
+  const left = (cap: number) => Math.max(1200, Math.min(cap, deadline - Date.now()));
 
   const providers: Array<[string, () => Promise<string>]> = [
-    ["custom", () => askOpenAICompatible(system, history, question, context)],
-    ["openrouter", () => askOpenRouter(system, history, question, context)],
-    ["gemini", () => askGemini(system, history, question, context)],
-    ["groq", () => askGroq(system, history, question, context)],
+    ["custom", () => askOpenAICompatible(system, history, question, context, left(9000))],
+    ["gemini", () => askGemini(system, history, question, context, left(9000))],
+    ["openrouter", () => askOpenRouter(system, history, question, context, left(9000))],
+    ["groq", () => askGroq(system, history, question, context, left(9000))],
+    ["ollama", () => askOllama(system, history, question, context, left(28_000))],
+    ["pollinations", () => askPollinations(system, history, question, context, left(22_000))],
   ];
 
   for (const [name, ask] of providers) {
+    if (Date.now() > deadline - 1000) break;
     try {
       const raw = await ask();
-      const reply = cleanReply(raw);
-      if (reply.length >= 12) {
+      const reply = guardNumbers(cleanReply(raw, sources.length), context);
+      if (!badReply(reply)) {
         return {
           reply,
           sources,
           provider: name,
           track,
+          staff: staff.id,
+          handoff: false,
           usedContext: true,
         };
       }
@@ -279,12 +526,12 @@ export async function answerQuestion(input: {
   }
 
   return {
-    reply:
-      extractiveAnswer(chunks, question) ||
-      noContextReply(track),
+    reply: extractiveAnswer(chunks, question) || noContextReply(staff),
     sources,
     provider: "notes",
     track,
+    staff: staff.id,
+    handoff: false,
     usedContext: true,
   };
 }

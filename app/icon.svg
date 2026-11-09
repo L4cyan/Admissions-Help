@@ -3,8 +3,8 @@
   <circle cx="256" cy="256" r="184" fill="#f8f1e2"/>
   <circle cx="256" cy="256" r="184" fill="none" stroke="#d7a62d" stroke-width="12"/>
   <circle cx="256" cy="248" r="106" fill="#efc4a1" stroke="#3a2a22" stroke-width="10"/>
-  <path d="M150 248c-8-78 42-132 106-132s114 54 106 132l10 96c-12 22-34 26-52 12l-4-62c-24 22-96 22-120 0l-4 62c-18 14-40 10-52-12Z" fill="#34221a" stroke="#241611" stroke-width="10" stroke-linejoin="round"/>
-  <path d="M168 232c12-52 44-78 88-78s76 26 88 78c-22-18-46-26-88-26s-66 8-88 26Z" fill="#34221a"/>
+  <path d="M150 248c-8-78 42-132 106-132s114 54 106 132l10 96c-12 22-34 26-52 12l-4-62c-24 22-96 22-120 0l-4 62c-18 14-40 10-52-12Z" fill="#6b4936" stroke="#3f2a1e" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M168 232c12-52 44-78 88-78s76 26 88 78c-22-18-46-26-88-26s-66 8-88 26Z" fill="#6b4936"/>
   <ellipse cx="220" cy="266" rx="14" ry="18" fill="#2b1d18"/>
   <ellipse cx="292" cy="266" rx="14" ry="18" fill="#2b1d18"/>
   <circle cx="224" cy="259" r="5" fill="#fff"/>
@@ -13,6 +13,8 @@
   <path d="M226 310c16 7 44 7 60 0-6 10-16 16-30 16s-24-6-30-16Z" fill="#fff"/>
   <circle cx="190" cy="296" r="13" fill="#f29a91" opacity=".55"/>
   <circle cx="322" cy="296" r="13" fill="#f29a91" opacity=".55"/>
+  <circle cx="154" cy="300" r="9" fill="#fffdf7" stroke="#a8987d" stroke-width="3"/>
+  <circle cx="358" cy="300" r="9" fill="#fffdf7" stroke="#a8987d" stroke-width="3"/>
   <path d="M256 316v56" stroke="#1b3a70" stroke-width="16" stroke-linecap="round"/>
   <path d="M212 380c20-18 68-18 88 0l16 52H196Z" fill="#1b3a70" stroke="#3a2a22" stroke-width="8"/>
   <rect x="238" y="388" width="36" height="44" rx="5" fill="#fffdf7" stroke="#3a2a22" stroke-width="5"/>

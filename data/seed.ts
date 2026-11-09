@@ -131,6 +131,27 @@ Scholarship submissions: admissionsandaid@adzu.edu.ph
 The office processes CET applications and results, enrollment of new and transfer students, academic program shifting, scholarship applications, and scholar performance evaluation.`,
     },
     {
+      id: "general-staff-directory",
+      title: "College Admissions & Aid Office staff directory",
+      category: "general",
+      sourceUrl: OFFICE_URL,
+      sourceType: "official-web",
+      addedAt: CHECKED,
+      text: `The official AdZU College Admissions & Aid Office page lists these people:
+
+- Jennifer G. Reyes — Director. Students and families often call her Ma'am Jen or Ate Jen.
+- Crizel P. Cardenas — Staff; scholarship and ASAA work. Often called Ate Cris.
+- Rose Jasmine Lumigis — Staff; scholarship and financial-aid work. Often called Ate Rose.
+- Sherry Gloria A. Lim — Staff; Admissions, and the CET Test Coordinator. Often called Ate Sherry.
+- Marilou Pong — Staff; Admissions and enrollment. Often called Ate Marilou.
+
+The same office handles CET applications and results, freshman and transferee enrollment, academic program shifting, scholarship applications, and scholar performance evaluation.
+
+Office: Ground Floor, Bellarmine–Campion Building, Salvador Campus, La Purisima Street, Zamboanga City. Phone: 9910871 local 2211 or 2212. Mobile: +639277705888 or +639082613133. Email: admissions@adzu.edu.ph. Scholarship papers: admissionsandaid@adzu.edu.ph.
+
+Names, roles, and assignments can change. Confirm with the office before quoting a specific person for a decision.`,
+    },
+    {
       id: "admissions-shifting",
       title: "Shifting to another academic program",
       category: "admissions",

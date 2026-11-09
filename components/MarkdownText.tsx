@@ -48,7 +48,7 @@ function parseBlocks(text: string): Block[] {
 }
 
 const INLINE =
-  /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\((?:https?:\/\/)[^)]+\)|https?:\/\/[^\s)]+|\[\d+\])/g;
+  /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[[^\]]+\]\((?:https?:\/\/)[^)]+\)|https?:\/\/[^\s)]+|\[\d+\])/g;
 
 function inline(text: string, keyPrefix: string): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -63,6 +63,12 @@ function inline(text: string, keyPrefix: string): ReactNode[] {
 
     if (token.startsWith("**") && token.endsWith("**")) {
       nodes.push(<strong key={key}>{token.slice(2, -2)}</strong>);
+    } else if (
+      token.startsWith("*") &&
+      token.endsWith("*") &&
+      !token.startsWith("**")
+    ) {
+      nodes.push(<em key={key}>{token.slice(1, -1)}</em>);
     } else if (token.startsWith("`") && token.endsWith("`")) {
       nodes.push(<code key={key}>{token.slice(1, -1)}</code>);
     } else if (/^\[\d+\]$/.test(token)) {

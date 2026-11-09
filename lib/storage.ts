@@ -1,5 +1,11 @@
 import { SEED_KB } from "@/data/seed";
-import type { KBDocument, KnowledgeBase } from "./types";
+import { aiMode } from "./providers";
+import type {
+  DocumentStatus,
+  KBDocument,
+  KnowledgeBase,
+  StaffId,
+} from "./types";
 
 const BLOB_PREFIX = "adzu-ask";
 const BLOB_PATH = `${BLOB_PREFIX}/kb.json`;
@@ -31,8 +37,7 @@ async function readLocal(): Promise<KnowledgeBase | null> {
   try {
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
-    const file = path.join(process.cwd(), LOCAL_FILE);
-    const raw = await fs.readFile(file, "utf8");
+    const raw = await fs.readFile(path.join(process.cwd(), LOCAL_FILE), "utf8");
     const parsed = JSON.parse(raw);
     return isValidKB(parsed) ? parsed : null;
   } catch {
@@ -98,7 +103,7 @@ export async function saveKB(kb: KnowledgeBase): Promise<void> {
   } else {
     if (process.env.VERCEL) {
       throw new Error(
-        "This deployment is read-only. Connect a Vercel Blob store (BLOB_READ_WRITE_TOKEN) to save uploaded documents.",
+        "This deployment is read-only. Connect a Vercel Blob store (BLOB_READ_WRITE_TOKEN) to save documents.",
       );
     }
     const fs = await import("node:fs/promises");
@@ -123,6 +128,10 @@ export function newDocumentId(): string {
   return `doc_${Date.now().toString(36)}_${random}`;
 }
 
+export function isPublished(doc: KBDocument): boolean {
+  return doc.status !== "draft";
+}
+
 export async function addDocument(doc: KBDocument): Promise<KnowledgeBase> {
   const kb = await getKB();
   const duplicate = kb.documents.find(
@@ -135,7 +144,33 @@ export async function addDocument(doc: KBDocument): Promise<KnowledgeBase> {
   }
   const next: KnowledgeBase = {
     ...kb,
-    documents: [...kb.documents, doc],
+    documents: [...kb.documents, { ...doc, status: doc.status ?? "published" }],
+  };
+  await saveKB(next);
+  return next;
+}
+
+export async function updateDocument(
+  id: string,
+  patch: Partial<
+    Pick<KBDocument, "title" | "category" | "sourceUrl" | "text" | "status">
+  >,
+): Promise<KnowledgeBase> {
+  const kb = await getKB();
+  const existing = kb.documents.find((doc) => doc.id === id);
+  if (!existing) throw new Error("Document not found.");
+
+  const next: KnowledgeBase = {
+    ...kb,
+    documents: kb.documents.map((doc) =>
+      doc.id === id
+        ? {
+            ...doc,
+            ...patch,
+            updatedAt: new Date().toISOString(),
+          }
+        : doc,
+    ),
   };
   await saveKB(next);
   return next;
@@ -158,6 +193,7 @@ export function documentMeta(doc: KBDocument, full = false) {
     category: doc.category,
     sourceUrl: doc.sourceUrl,
     sourceType: doc.sourceType,
+    status: (doc.status ?? "published") as DocumentStatus,
     addedAt: doc.addedAt,
     updatedAt: doc.updatedAt,
     chars: doc.text.length,
@@ -167,18 +203,39 @@ export function documentMeta(doc: KBDocument, full = false) {
 
 export function kbStats(kb: KnowledgeBase) {
   const byCategory = { admissions: 0, scholarships: 0, general: 0 };
-  for (const doc of kb.documents) byCategory[doc.category] += 1;
+  let published = 0;
+  let drafts = 0;
+  for (const doc of kb.documents) {
+    byCategory[doc.category] += 1;
+    if (isPublished(doc)) published += 1;
+    else drafts += 1;
+  }
+  const mode = aiMode();
   return {
     documents: kb.documents.length,
+    published,
+    drafts,
     characters: kb.documents.reduce((sum, doc) => sum + doc.text.length, 0),
     byCategory,
     updatedAt: kb.updatedAt,
     storage: getStorageMode(),
-    aiConfigured: Boolean(
-      (process.env.AI_BASE_URL && process.env.AI_API_KEY && process.env.AI_MODEL) ||
-        process.env.OPENROUTER_API_KEY ||
-        process.env.GEMINI_API_KEY ||
-        process.env.GROQ_API_KEY,
-    ),
+    aiMode: mode,
+    aiLabel:
+      mode === "configured"
+        ? "AI connected"
+        : mode === "free"
+          ? "Free AI (no key)"
+          : "Notes only",
   };
+}
+
+export function staffLabel(id: StaffId): string {
+  const labels: Record<StaffId, string> = {
+    director: "Ma'am Jen",
+    rose: "Ate Rose",
+    cris: "Ate Cris",
+    sherry: "Ate Sherry",
+    marilou: "Ate Marilou",
+  };
+  return labels[id];
 }

@@ -14,7 +14,7 @@ You need:
 - A GitHub account
 - A Vercel account
 - A strong admin passcode
-- At least one AI provider key (optional - the app works in quoted-notes mode)
+- Optional but recommended: one free AI key (Gemini/OpenRouter/Groq). With no key, the app uses Pollinations' free tier, then quoted notes.
 - A Vercel Blob store, if staff uploads must persist
 - Rights to publish every document you upload to the knowledge base
 
@@ -27,7 +27,7 @@ npm run build
 npm run start
 ```
 
-If `npm ci` complains about the lockfile, use `npm install`. Open <http://localhost:3000>, try both chats, and unlock `/admin` before deploying.
+If `npm ci` complains about the lockfile, use `npm install`. Open <http://localhost:3000>, ask a scholarship question and an admissions question to see the handoff, then unlock `/admin` before deploying.
 
 Useful checks:
 
@@ -106,16 +106,18 @@ git push -u origin main
 | Name | Value | Environments |
 | --- | --- | --- |
 | `ADMIN_PASSCODE` | A long random passphrase | Production (and Preview if you use it) |
-| `OPENROUTER_API_KEY` | Your OpenRouter key, **or** use one of the alternatives below | Production |
+| `GEMINI_API_KEY` | Free Google AI Studio key (recommended), **or** use one of the alternatives below | Production |
 | `BLOB_READ_WRITE_TOKEN` | Do not add this manually; Vercel injects it when you connect a Blob store (step below) | Production, Preview, Development |
 | `NEXT_PUBLIC_SITE_URL` | `https://<your-project>.vercel.app` (or your custom domain); leave blank on the first deploy if you do not know the URL yet | Production |
 
-Pick **one** AI option:
+Pick **one** AI option (Gemini is the fastest free default):
 
+- `GEMINI_API_KEY` (optionally `GEMINI_MODEL`) — free tier from <https://aistudio.google.com/apikey>
 - `OPENROUTER_API_KEY` (optionally `OPENROUTER_MODEL`)
-- `GEMINI_API_KEY` (optionally `GEMINI_MODEL`)
 - `GROQ_API_KEY` (optionally `GROQ_MODEL`)
 - `AI_BASE_URL` + `AI_API_KEY` + `AI_MODEL` for any OpenAI-compatible API
+
+No key? Leave them all blank. The app tries Pollinations' keyless free tier, then falls back to quoted notes. Pollinations' anonymous tier is rate-limited, so a free Gemini key is strongly recommended for a public deployment. Do **not** set `OLLAMA_BASE_URL` on Vercel; it is for local/self-hosted use.
 
 You may configure more than one. The fallback order is custom -> OpenRouter -> Gemini -> Groq -> quoted notes.
 
@@ -202,11 +204,15 @@ Blob store creation is easiest in the dashboard (**Storage** -> **Create** -> **
 | `AI_API_KEY` | One AI option | Key for the custom endpoint. |
 | `AI_MODEL` | One AI option | Model ID for the custom endpoint. |
 | `OPENROUTER_API_KEY` | One AI option | Free OpenRouter models are supported. |
-| `OPENROUTER_MODEL` | No | Default: `google/gemma-4-31b-it:free`. |
-| `GEMINI_API_KEY` | One AI option | Google AI Studio / Gemini API key. |
-| `GEMINI_MODEL` | No | Default: `gemini-3.8-flash`. |
+| `OPENROUTER_MODEL` | No | Default: a free OpenRouter model. |
+| `GEMINI_API_KEY` | One AI option | Google AI Studio / Gemini API key. Recommended free default. |
+| `GEMINI_MODEL` | No | Default: `gemini-3.5-flash-lite`. |
 | `GROQ_API_KEY` | One AI option | Groq API key. |
 | `GROQ_MODEL` | No | Default: `openai/gpt-oss-120b`. |
+| `OLLAMA_BASE_URL` | No | Local/self-hosted Ollama only. Leave blank on Vercel. |
+| `OLLAMA_MODEL` | No | Default: `gemma3:4b`. |
+| `FREE_AI` | No | `on` (default) enables the keyless Pollinations fallback; `off` disables it. |
+| `POLLINATIONS_MODEL` | No | Default: `openai-fast`. |
 | `BLOB_READ_WRITE_TOKEN` | Strongly recommended | Added automatically when a Blob store is connected. Without it, uploads do not persist on Vercel. |
 | `NEXT_PUBLIC_SITE_URL` | No | Defaults to `https://adzu-ask.vercel.app`; set it to your deployment URL or custom domain. |
 
@@ -289,8 +295,8 @@ Confirm:
 | `/admin` rejects the passcode | `ADMIN_PASSCODE` is unset, wrong, or the deployment predates the env change. Set it and redeploy. In production there is no fallback. |
 | Admin says "read-only deployment" | No `BLOB_READ_WRITE_TOKEN` in the Vercel environment. Connect a Blob store and redeploy. |
 | Uploads work locally but not on Vercel | Local writes go to `data/kb.json`, which is not deployed. Connect Blob and re-add the documents through production `/admin`. Alternatively, edit `data/seed.ts` and redeploy. |
-| Answers always say "quoted notes" / no AI | No provider key is set, or all providers failed. Check `/api/health` provider flags and Vercel function logs for `[chat] <provider> failed`. |
-| 504 / function timeout | Each provider can take up to 30 seconds, while the route is capped at 60 seconds. Several slow providers in a row can hit the platform cap before the notes fallback runs. Remove unused keys, use a faster provider, or increase `maxDuration` if your plan allows. |
+| Answers always say "quoted notes" / no AI | No provider key is set, or all providers failed or were rate-limited. Pollinations' anonymous tier allows roughly one reply per 45 seconds per IP. Check `/api/health` provider flags and Vercel function logs for `[chat] <provider> failed`. Add a free Gemini key for a reliable public default. |
+| 504 / function timeout | The route caps the whole answer at about 30 seconds and the platform function at 60. If several providers are slow, the notes fallback runs before the cap. Remove unused keys, use a faster provider, or increase `maxDuration` if your plan allows. |
 | 413 Payload Too Large | File exceeds the app's 4 MB cap or Vercel's ~4.5 MB body limit. Split the file or paste the relevant text. |
 | Scanned PDF rejected | It has no selectable text. Upload page images so browser OCR can extract text, or paste the text. |
 | Image OCR does not start / takes long | Tesseract.js runs in the browser and downloads its engine and English language data on first use. Check the user's network and try a clearer image. |
@@ -305,12 +311,12 @@ Confirm:
 
 ## 9. Security and operations
 
-- **The knowledge base is public.** Blob objects are written with public access (`adzu-ask/kb.json`). Do not upload confidential, personal, or internal-only documents.
+- **The knowledge base and gap log are public in Blob mode.** Blob objects are written with public access (`adzu-ask/kb.json`, `adzu-ask/gaps.json`). Drafts are included in the KB JSON even though the chat hides them. Do not upload confidential, personal, or internal-only documents.
 - **The admin passcode is a shared secret.** Use a long random value, rotate it if it leaks, and remember that locking the desk only clears the browser's `sessionStorage`.
 - **Admin endpoints are protected by the passcode only.** There is no separate rate limit or account system for admin attempts. Use a strong passcode.
-- **Chat rate limiting is best-effort.** It uses an in-memory map (40 requests per IP per 10 minutes) and is not shared across serverless instances or cold starts.
+- **Chat rate limiting is best-effort.** It uses an in-memory map (60 requests per IP per 10 minutes) and is not shared across serverless instances or cold starts.
 - **Admin writes are last-write-wins.** Each save replaces the whole `kb.json`; avoid simultaneous edits from multiple staff sessions, or one upload can overwrite another.
-- **The AI system prompt contains a fixed date.** `lib/providers.ts` currently says "Today is 9 November 2026." Update that line when you refresh the notes, or the model may reason with an old date.
-- **AI providers receive the user's question and retrieved note snippets.** Do not ingest material that cannot be sent to OpenRouter, Google, Groq, or your custom provider.
+- **AI providers receive the user's question and retrieved note snippets.** Do not ingest material that cannot be sent to Pollinations, Google, OpenRouter, Groq, Ollama, or your custom provider.
+- **Free AI is best-effort.** Pollinations' anonymous tier is shared and rate-limited. Add a free Gemini key for predictable production behavior.
 - **`/api/health` is public.** It exposes document counts, storage mode, chunk count, and which providers are configured - but no keys or document text.
 - **This is an unofficial project.** Keep the disclaimers visible and confirm policy wording with the Admissions & Aid Office before a public launch.

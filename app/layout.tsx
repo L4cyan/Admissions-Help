@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, DM_Sans, Fraunces } from "next/font/google";
+import { DM_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
 import { PwaRegister } from "@/components/PwaRegister";
 
@@ -13,11 +13,6 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   display: "swap",
 });
-const caveat = Caveat({
-  subsets: ["latin"],
-  variable: "--font-caveat",
-  display: "swap",
-});
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL || "https://adzu-ask.vercel.app";
@@ -25,11 +20,11 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "AdZU Ask — Admissions & Aid",
+    default: "AdZU Ask — Admissions & Aid, one chat",
     template: "%s · AdZU Ask",
   },
   description:
-    "A friendly chibi guide to Ateneo de Zamboanga University college admissions and scholarships. Ask about the CET, requirements, aid, and deadlines — with sources.",
+    "Ask anything about Ateneo de Zamboanga University college admissions, the CET, scholarships, and financial aid. One chat, real staff names, answers cited from official notes.",
   applicationName: "AdZU Ask",
   keywords: [
     "Ateneo de Zamboanga University",
@@ -39,6 +34,11 @@ export const metadata: Metadata = {
     "financial aid",
     "CET",
     "Zamboanga",
+    "Jenny Reyes",
+    "Rose Lumigis",
+    "Crizel Cardenas",
+    "Sherry Lim",
+    "Marilou Pong",
   ],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -55,18 +55,18 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "AdZU Ask — Admissions & Aid",
+    title: "AdZU Ask — Admissions & Aid, one chat",
     description:
-      "Ask the chibi guides about AdZU college admissions, the CET, scholarships, and financial aid. Answers grounded in official notes.",
+      "One chat for AdZU college admissions, the CET, scholarships, and financial aid. No lanes, no forms — the right staff guide picks it up.",
     url: siteUrl,
     siteName: "AdZU Ask",
     images: [{ url: "/icons/icon-512.png", width: 512, height: 512 }],
   },
   twitter: {
     card: "summary",
-    title: "AdZU Ask — Admissions & Aid",
+    title: "AdZU Ask — Admissions & Aid, one chat",
     description:
-      "A friendly chibi guide to AdZU college admissions and scholarships.",
+      "Ask about AdZU admissions and scholarships in plain language. Answers cited from official notes.",
     images: ["/icons/icon-512.png"],
   },
   robots: { index: true, follow: true },
@@ -83,7 +83,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${caveat.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${dmSans.variable}`}>
       <body>
         {children}
         <PwaRegister />

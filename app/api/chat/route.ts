@@ -1,40 +1,45 @@
 import { NextResponse } from "next/server";
 import { answerQuestion } from "@/lib/providers";
-import { retrieve } from "@/lib/kb";
+import { isSmallTalk, retrieve } from "@/lib/kb";
 import { getKB } from "@/lib/storage";
-import { isTrack } from "@/lib/tracks";
+import { routeQuestion, staffFor } from "@/lib/staff";
+import { recordGap } from "@/lib/gaps";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
-import type { ChatTurn } from "@/lib/types";
+import type { ChatTurn, StaffId, Track } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+function isTrack(value: unknown): value is Track {
+  return value === "admissions" || value === "scholarships";
+}
+
+function isStaff(value: unknown): value is StaffId {
+  return value === "director" || value === "rose" || value === "cris" || value === "sherry" || value === "marilou";
+}
+
 export async function POST(request: Request) {
   try {
     const ip = clientIp(request);
-    const limit = rateLimit(`chat:${ip}`);
+    const limit = rateLimit(`chat:${ip}`, 60);
     if (!limit.ok) {
       return NextResponse.json(
         {
           error:
-            "You're asking faster than my chibi brain can keep up. Please wait a few minutes and try again.",
+            "You're asking faster than I can keep up. Give me a minute, then try again.",
         },
         { status: 429 },
       );
     }
 
     const body = (await request.json()) as {
-      track?: string;
       messages?: Array<{ role?: string; content?: string }>;
+      previousTrack?: string;
+      previousStaff?: string;
+      preferredStaff?: string;
+      hint?: string;
     };
-
-    if (!body.track || !isTrack(body.track)) {
-      return NextResponse.json(
-        { error: "Pick admissions or scholarships first." },
-        { status: 400 },
-      );
-    }
 
     const messages: ChatTurn[] = (body.messages ?? [])
       .filter(
@@ -66,22 +71,71 @@ export async function POST(request: Request) {
     }
 
     const history = messages.slice(0, lastUserIndex);
+    const previousTrack = isTrack(body.previousTrack) ? body.previousTrack : undefined;
+    const previousStaff = isStaff(body.previousStaff) ? body.previousStaff : undefined;
+    const preferredStaff = isStaff(body.preferredStaff)
+      ? body.preferredStaff
+      : undefined;
+    const hint = isTrack(body.hint) ? body.hint : undefined;
+
+    let route = routeQuestion(question, previousTrack);
+    if (preferredStaff) {
+      const preferred = staffFor(preferredStaff);
+      route = {
+        track: preferred.desk === "both" ? route.track : preferred.desk,
+        staff: preferredStaff,
+        confidence: "high",
+        reason: "Chosen from the team sheet",
+      };
+    } else if (hint && route.confidence === "low" && !previousTrack) {
+      route = routeQuestion(question, hint);
+    }
+    const staff = staffFor(route.staff);
+    const handoff = previousStaff
+      ? previousStaff !== route.staff
+      : route.staff !== "director";
+
     const kb = await getKB();
-    const { chunks, sources } = retrieve(kb, question, body.track, 6);
+    const { chunks, sources } = retrieve(kb, question, route.track, 6);
     const result = await answerQuestion({
-      track: body.track,
+      track: route.track,
+      staff,
       question,
       history,
       chunks,
       sources,
     });
 
-    return NextResponse.json(result, {
-      headers: {
-        "cache-control": "no-store",
-        "x-ratelimit-remaining": String(limit.remaining),
+    const replyMiss =
+      /\b(i (don't|do not) have|not in the (official )?notes|can't find|cannot find|i'm not sure)\b/i.test(
+        result.reply,
+      );
+    const shouldLogGap =
+      !isSmallTalk(question) &&
+      (result.provider === "guide" || replyMiss);
+    if (shouldLogGap) {
+      void recordGap({
+        question,
+        track: route.track,
+        staff: route.staff,
+      }).catch((error) => console.error("[gaps] write failed", error));
+    }
+
+    return NextResponse.json(
+      {
+        ...result,
+        staff: route.staff,
+        track: route.track,
+        handoff,
+        route: { confidence: route.confidence, reason: route.reason },
       },
-    });
+      {
+        headers: {
+          "cache-control": "no-store",
+          "x-ratelimit-remaining": String(limit.remaining),
+        },
+      },
+    );
   } catch (error) {
     console.error("[api/chat]", error);
     return NextResponse.json(
