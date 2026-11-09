@@ -47,17 +47,15 @@ async function readLocal(): Promise<KnowledgeBase | null> {
 async function readBlob(): Promise<KnowledgeBase | null> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
   try {
-    const { list } = await import("@vercel/blob");
-    const { blobs } = await list({ prefix: BLOB_PREFIX, limit: 20 });
-    const found = blobs.find((blob) => blob.pathname === BLOB_PATH);
-    if (!found) return null;
-    // Public Blob URLs are CDN-cached. A cache-busting query string makes
-    // admin writes visible immediately instead of up to a minute later.
-    const url = new URL(found.url);
-    url.searchParams.set("ts", String(Date.now()));
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return null;
-    const parsed = await response.json();
+    const { get } = await import("@vercel/blob");
+    // Read from origin storage instead of the CDN so admin writes are visible
+    // immediately. The public URL can otherwise serve a stale cached copy.
+    const result = await get(BLOB_PATH, {
+      access: "public",
+      useCache: false,
+    });
+    if (!result || result.statusCode !== 200 || !result.stream) return null;
+    const parsed = await new Response(result.stream).json();
     return isValidKB(parsed) ? parsed : null;
   } catch (error) {
     console.error("[storage] blob read failed", error);
