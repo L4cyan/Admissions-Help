@@ -51,7 +51,11 @@ async function readBlob(): Promise<KnowledgeBase | null> {
     const { blobs } = await list({ prefix: BLOB_PREFIX, limit: 20 });
     const found = blobs.find((blob) => blob.pathname === BLOB_PATH);
     if (!found) return null;
-    const response = await fetch(found.url, { cache: "no-store" });
+    // Public Blob URLs are CDN-cached. A cache-busting query string makes
+    // admin writes visible immediately instead of up to a minute later.
+    const url = new URL(found.url);
+    url.searchParams.set("ts", String(Date.now()));
+    const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) return null;
     const parsed = await response.json();
     return isValidKB(parsed) ? parsed : null;
