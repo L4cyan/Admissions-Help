@@ -300,6 +300,18 @@ export function routeQuestion(
     reason = "No clear desk; starting with admissions";
   }
 
+  // A named degree, program, or department is an admissions question. Keep
+  // scholarship questions on the scholarship desk when they mention a program.
+  const programIntent =
+    /\b(program|programs|course|courses|degree|major|curriculum|engineering|nursing|accountancy|psychology|architecture|law|medicine|computer science|information technology|biology|mathematics|education|communication|international studies|philosophy)\b/i.test(
+      text,
+    );
+  if (programIntent && strongScholarship === 0) {
+    track = "admissions";
+    confidence = "high";
+    reason = "Program or degree question";
+  }
+
   // Identity questions and office/location questions always go to the director,
   // even on a follow-up that would otherwise inherit the scholarship desk.
   if (isIdentityQuestion(text) || OFFICE_LOCATION.test(text)) {

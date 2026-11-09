@@ -54,6 +54,8 @@ HARD RULES
 11. Answer the specific question asked. Do not add a different process (for example, test-permit steps when the question is about enrollment) unless the user asks for it.
 12. Never claim that a staff member is present, busy, or available. Never say you can transfer the chat or connect the student to a person. Give the office contact instead.
 13. For a broad "what scholarships" question, cover all three categories — university, government, and private/donor — and state that government grants except PESFA are processed by CHED or the awarding agency.
+14. PROGRAM RULE: Never confirm that a degree or program exists unless it is explicitly named in the CONTEXT's official program list. If a student names a program that is not listed, say it is not in AdZU's current official program list, and do not describe its curriculum, licensure, or careers as an AdZU program. For BS Mechanical Engineering, say plainly that AdZU does not offer it, then name the engineering programs that are listed.
+15. Use the exact program names in the CONTEXT. Do not rename, merge, or add programs, and do not treat an older program name as a current offering.
 
 Today is ${today}. You are talking to a prospective student, parent, or scholar.
 
@@ -184,6 +186,40 @@ function guardNumbers(reply: string, context: string): string {
   if (!removed) return reply;
   const safe = kept.join(" ").trim();
   return `${safe}${safe ? "\n\n" : ""}Please confirm the current fee or deadline with the Admissions & Aid Office.`;
+}
+
+const UNLISTED_PROGRAMS: Array<{ test: RegExp; label: string }> = [
+  { test: /\bmechanical engineering\b/i, label: "BS Mechanical Engineering" },
+  { test: /\bchemical engineering\b/i, label: "BS Chemical Engineering" },
+  { test: /\bindustrial engineering\b/i, label: "BS Industrial Engineering" },
+  { test: /\bp(?:etroleum|etrochemical) engineering\b/i, label: "BS Petroleum Engineering" },
+  { test: /\bmining engineering\b/i, label: "BS Mining Engineering" },
+  { test: /\baeronautical engineering\b/i, label: "BS Aeronautical Engineering" },
+];
+
+/**
+ * The catalog is explicit about programs AdZU does not offer. If the model
+ * still describes one as an AdZU program, replace that claim deterministically.
+ */
+function guardProgramClaims(reply: string, question: string): string {
+  const item = UNLISTED_PROGRAMS.find((entry) => entry.test.test(question));
+  if (!item) return reply;
+
+  const text = reply.toLowerCase();
+  const name = item.label.replace(/^BS /, "").toLowerCase();
+  if (!text.includes(name)) return reply;
+
+  const negated =
+    /\b(not|no|never|isn't|doesn't|don't|does not|do not|cannot|can't|unavailable)\b/.test(
+      text,
+    );
+  if (negated) return reply;
+
+  if (item.label === "BS Mechanical Engineering") {
+    return `AdZU's current official program list does not include BS Mechanical Engineering. It is not an AdZU program, so I don't want to describe it as one. The engineering programs that are listed are BS Civil Engineering, BS Computer Engineering, BS Electronics Communications Engineering, BS Biomedical Engineering, and the Associate in Electronics Engineering Technology. If Mechanical Engineering is your goal, you would need to check other universities. The Admissions & Aid Office can confirm.`;
+  }
+
+  return `AdZU's current official program list does not include ${item.label}, so I don't want to describe it as an AdZU program. Please confirm with the Admissions & Aid Office before you plan around it.`;
 }
 
 function badReply(reply: string): boolean {
@@ -547,7 +583,10 @@ export async function answerQuestion(input: {
     if (Date.now() > deadline - 1000) break;
     try {
       const raw = await ask();
-      const reply = guardNumbers(cleanReply(raw, sources.length), context);
+      const reply = guardProgramClaims(
+        guardNumbers(cleanReply(raw, sources.length), context),
+        question,
+      );
       if (!badReply(reply)) {
         return {
           reply,

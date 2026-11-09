@@ -126,11 +126,13 @@ export async function POST(request: Request) {
     const handoff = previousStaff
       ? previousStaff !== route.staff
       : route.staff !== "director";
-    const conversational =
-      route.staff === "director" && route.confidence === "low";
 
     const kb = await getKB();
     const { chunks, sources } = retrieve(kb, question, route.track, 6);
+    // Only fall back to conversation mode when nothing in the notes matched.
+    // A low-confidence route can still have a strong program or policy match.
+    const conversational =
+      route.staff === "director" && route.confidence === "low" && chunks.length === 0;
     const result = await answerQuestion({
       track: route.track,
       staff,

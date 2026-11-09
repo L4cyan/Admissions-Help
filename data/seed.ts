@@ -1,6 +1,12 @@
 import type { KnowledgeBase } from "@/lib/types";
 
 const CHECKED = "2026-11-09";
+const PROGRAMS_CHECKED = "2026-11-10";
+const PROGRAM_BROCHURE_URL =
+  "https://adzu.edu.ph/wp-content/uploads/2025/01/Academic-Programs-Brochure.pdf";
+const PROGRAM_PAGE_URL = "https://adzu.edu.ph/academic-programs-offering/";
+const FACEBOOK_COURSE_GUIDE =
+  "https://www.facebook.com/ateneodezamboangauniversity/posts/adzu-college-guide-course-offerings-for-sy-2025-2026discover-the-college-program/1004936778334191/";
 const OFFICE_URL = "https://adzu.edu.ph/about-us/admissions-aid";
 const PORTAL_URL = "https://admissions.host.adzu.edu.ph/";
 const SCHOLARSHIP_URL = "https://adzu.edu.ph/scholarship-and-financial-grants";
@@ -17,8 +23,8 @@ const FINANCE_URL = "https://adzu.edu.ph/about-us/finance-office/";
 const GCASH_URL = "https://adzu.edu.ph/adzu-is-now-on-gcash/";
 
 export const SEED_KB: KnowledgeBase = {
-  version: 1,
-  updatedAt: "2026-11-09T00:00:00.000Z",
+  version: 2,
+  updatedAt: "2026-11-10T00:00:00.000Z",
   documents: [
     {
       id: "admissions-how-to-apply-cet",
@@ -365,6 +371,278 @@ Keep a copy of everything you submit. If you email documents, use clear file nam
 If you are applying to Senior High School, contact the Senior High School office or check the SHS admissions page. The college CET, college test permit, and college enrollment requirements described here do not automatically apply to SHS applicants.
 
 If you are unsure which office handles your level, ask the Admissions & Aid Office and they will point you to the right unit.`,
+    },
+    {
+      id: "programs-catalog",
+      title: "AdZU college program catalog (official list)",
+      category: "admissions",
+      sourceUrl: PROGRAM_BROCHURE_URL,
+      sourceType: "official-pdf",
+      addedAt: PROGRAMS_CHECKED,
+      text: `These are the college programs listed on AdZU's official Academic Programs brochure (published January 2025) and on the current school and college pages (checked November 2026). Use this list when a student asks whether AdZU offers a program.
+
+College of Nursing (CON): BS Nursing.
+
+College of Science, Information Technology and Engineering (CSITE): BS Biology; BS Biomedical Engineering (also written BS Bio Medical Engineering); BS Civil Engineering; BS Computer Engineering; BS Computer Science; BS Electronics Communications Engineering (called BS Electronics Engineering in the 2025 brochure); BS Information Technology; BS Mathematics; BS New Media and Computer Animation; Associate in Electronics Engineering Technology.
+
+School of Education (SEd): Bachelor of Early Childhood Education; Bachelor of Elementary Education; Bachelor of Physical Education; Bachelor of Secondary Education; Certificate in Professional Education.
+
+School of Liberal Arts (SLA): BA Communication; BA English Language Studies; BA International Studies; BA Philosophy; BS Psychology.
+
+School of Management and Accountancy (SMA): BS Accountancy; BS Management Accounting; BS Business Administration major in Entrepreneurship; BS Business Administration major in Financial Management; BS Business Administration major in Marketing Management; BS Legal Management; BS Office Administration.
+
+Professional schools: Juris Doctor and Master of Laws at the RUCJ College of Law; Doctor of Medicine–Master in Public Health Straight Program at the School of Medicine; graduate programs are listed in a separate note.
+
+BS Mechanical Engineering is NOT in this list. AdZU's current program list does not include Mechanical Engineering.`,
+    },
+    {
+      id: "programs-csite",
+      title: "CSITE programs: engineering, computer, math, and science",
+      category: "admissions",
+      sourceUrl:
+        "https://adzu.edu.ph/academics/college-of-science-information-technology-and-engineering/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `The College of Science, Information Technology and Engineering (CSITE) lists these programs.
+
+Computer Science Department:
+- BS Computer Science — algorithmically complex software and new algorithms.
+- BS Information Technology — planning, installing, and managing hardware and software technologies.
+- BS New Media and Computer Animation — graphics, design, photography, 2D and 3D animation.
+
+Engineering Department:
+- Associate in Electronics Engineering Technology (AEET) — IT operations and maintenance, a foundation for Computer and Electronics Engineering degrees.
+- BS Biomedical Engineering (also written BS Bio Medical Engineering) — engineering applied to health and medicine.
+- BS Civil Engineering — structural engineering, construction management, and geotechnical engineering.
+- BS Computer Engineering — hardware and software, analog and digital systems.
+- BS Electronics Communications Engineering (ECE) — electronics and communications. The 2025 brochure calls this BS Electronics Engineering.
+
+Mathematics and Natural Sciences:
+- BS Mathematics
+- BS Biology
+
+Graduate programs: Master in Information Technology and Master of Science in Computer Science.
+
+CSITE does NOT list BS Mechanical Engineering. Mechanical Engineering is not an AdZU program. The CSITE engineering list is Civil, Computer, Electronics Communications, and Biomedical Engineering, plus AEET.`,
+    },
+    {
+      id: "programs-sma",
+      title: "SMA programs: accountancy, business, legal management, office administration",
+      category: "admissions",
+      sourceUrl:
+        "https://adzu.edu.ph/academics/school-of-management-and-accountancy-sma/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `The School of Management and Accountancy (SMA) lists these college programs.
+
+- BS Accountancy (BSAc) — the board-exam-oriented accounting program that prepares students for the CPA licensure exam.
+- BS Management Accounting (BSMA) — management accounting, financial analysis, internal auditing, tax preparation, and technology for decision-making.
+- BS Business Administration major in Financial Management (BSBA-FM) — financial analysis, investments, and risk management.
+- BS Business Administration major in Marketing Management (BSBA-MM) — consumer behavior, branding, digital marketing, and sales management.
+- BS Business Administration major in Entrepreneurship (BSBA-Entrepreneurship) — business planning, opportunity recognition, and startup management.
+- BS Legal Management (BSLM) — legal studies and business management; a pre-law foundation.
+- BS Office Administration (BSOA) — office management, business communication, and office technology.
+
+SMA graduate programs include the Master in Business Administration and Master in Public Administration. The Graduate School also lists a Master in Governance and Development.
+
+These are the SMA offerings. SMA does not list BS Mechanical Engineering or other engineering programs.`,
+    },
+    {
+      id: "programs-sla",
+      title: "SLA programs: communication, English, international studies, philosophy, psychology",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/school-of-liberal-arts-sla/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `The School of Liberal Arts (SLA) lists these college programs.
+
+- BA Communication — print, broadcast, online media, film, advertising, and public relations.
+- BA English Language Studies — English language and literature, speech analysis, and speech writing.
+- BA International Studies — diplomacy, world regions, and international relations.
+- BA Philosophy — logical thinking and reflection on the human person, society, and religion.
+- BS Psychology — human behavior and mental processes, including social psychology, psychometrics, counseling, and human resources.
+
+SLA also offers graduate programs in English, Filipino, history, psychology, religious education, social studies, teaching philosophy, language studies, and guidance and counseling. Graduate offerings are listed in a separate note.
+
+SLA does not offer engineering programs.`,
+    },
+    {
+      id: "programs-sed",
+      title: "School of Education (SEd) programs",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/school-of-education-sed/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `The School of Education (SEd) lists these college programs.
+
+- Bachelor of Early Childhood Education (BECEd) — teaching and care for young children.
+- Bachelor of Elementary Education (BEEd) — elementary school teaching.
+- Bachelor of Physical Education (BPEd) — physical education teaching.
+- Bachelor of Secondary Education (BSEd) — secondary school teaching. Ask SEd for the current list of subject-area majors.
+- Certificate in Professional Education — a teacher-education certificate for graduates of other degree programs.
+
+SEd also offers master's and doctorate programs in educational administration, elementary education, early childhood education, mathematics education, and development management. Those are listed in the graduate programs note.
+
+SEd does not offer BS Mechanical Engineering.`,
+    },
+    {
+      id: "programs-con",
+      title: "College of Nursing (CON) programs",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/college-of-nursing-con/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `The College of Nursing (CON) offers the BS Nursing program. It prepares student nurses for direct nursing service, teaching, and research.
+
+Nursing has a selective admission process and additional health and interview requirements. Ask the College of Nursing or the Admissions & Aid Office for the current checklist before enrolling.
+
+CON graduate programs:
+- Master of Arts in Nursing (MAN)
+- Master in Nursing (MN)
+- Master in Health Administration (MHA)
+- Master in Health Science (MHS)
+
+CON does not offer BS Mechanical Engineering or other engineering programs.`,
+    },
+    {
+      id: "programs-graduate-nursing-csite",
+      title: "Graduate School: Nursing and CSITE programs",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/graduate-school-grad-s/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `AdZU Graduate School programs under the College of Nursing:
+- Master in Health Administration (MHA)
+- Master in Health Science (MHS)
+- Master in Nursing (MN)
+- Master of Arts in Nursing (MAN)
+
+AdZU Graduate School programs under CSITE:
+Non-thesis:
+- Master in Information Technology (MIT)
+- Master in Library and Information Science (MLIS)
+- Master in Mathematics Education
+- Master in Science Education major in Biology, Chemistry, General Science, or Physics
+Thesis:
+- Master of Science in Computer Science (MSCS)
+- Master of Science in Library and Information Science (MSLIS)
+- Master of Science in Mathematics Education
+
+Graduate admissions are separate from the college CET. Contact the Graduate School at graduate@adzu.edu.ph or 991-0871 local 2001.`,
+    },
+    {
+      id: "programs-graduate-education",
+      title: "Graduate School: Education programs",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/graduate-school-grad-s/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `AdZU Graduate School programs under the School of Education:
+Non-thesis:
+- Master in Early Childhood Education (M ECE)
+- Master in Educational Administration (M EAD)
+- Master in Elementary Education (M EED)
+Thesis:
+- Master of Arts in Early Childhood Education
+- Master of Arts in Educational Administration
+- Master of Arts in Elementary Education
+Doctorate:
+- Doctor of Philosophy in Development Management major in Business Administration or Educational Administration
+- Doctor of Philosophy in Education major in Mathematics Education
+
+The School of Education also lists a Master in Mathematics Education through the Graduate School. Graduate admissions are separate from the college CET. Contact the Graduate School at graduate@adzu.edu.ph or 991-0871 local 2001.`,
+    },
+    {
+      id: "programs-graduate-liberal-arts",
+      title: "Graduate School: Liberal Arts programs",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/graduate-school-grad-s/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `AdZU Graduate School programs under the School of Liberal Arts:
+Non-thesis:
+- Master in English
+- Master in Guidance and Counseling
+- Master in Psychology
+- Master in Religious Education
+- Master in Social Studies
+- Master in Teaching Philosophy
+Thesis:
+- Master of Arts in English
+- Master of Arts in Filipino
+- Master of Arts in History
+- Master of Arts in Psychology
+- Master of Arts in Religious Education
+- Master of Arts in Social Studies
+- Master of Arts in Teaching Philosophy
+Doctorate:
+- Doctor of Philosophy in Language Studies
+- Doctor of Philosophy in Psychology
+
+The guidance and counseling and psychology programs prepare students for the relevant licensure exams. Graduate admissions are separate from the college CET. Contact the Graduate School at graduate@adzu.edu.ph or 991-0871 local 2001.`,
+    },
+    {
+      id: "programs-graduate-business",
+      title: "Graduate School: Business, governance, and public administration",
+      category: "admissions",
+      sourceUrl:
+        "https://adzu.edu.ph/academics/school-of-management-and-accountancy-sma/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `AdZU Graduate School programs under the School of Management and Accountancy:
+- Master in Business Administration (MBA) — business management, leadership, and a 300-hour internship.
+- Master in Governance and Development — governance, development management, and public leadership.
+- Master in Public Administration (MPA) — leadership and management for public organizations.
+
+The MBA and MPA prospectuses are linked from the SMA page. Graduate admissions are separate from the college CET. Contact the Graduate School at graduate@adzu.edu.ph or 991-0871 local 2001.`,
+    },
+    {
+      id: "programs-law-medicine",
+      title: "Law and Medicine programs",
+      category: "admissions",
+      sourceUrl: "https://adzu.edu.ph/academics/rucjcollege-of-law/",
+      sourceType: "official-web",
+      addedAt: PROGRAMS_CHECKED,
+      text: `RUCJ College of Law:
+- Juris Doctor (JD) — a four-year non-thesis law program.
+- Master of Laws (LL.M) — offered in partnership with the Ateneo de Manila University School of Law, with a focus on research, international law, and dispute resolution.
+
+School of Medicine:
+- Doctor of Medicine–Master in Public Health (MD-MPH) Straight Program.
+
+Law and Medicine have separate admission processes from the college CET. Contact the College of Law or the School of Medicine for their current requirements and application dates.
+
+There is no separate "Pre-Medicine" program in AdZU's college program list. Students who plan to enter medicine usually take a science degree such as BS Biology, then apply to the School of Medicine.`,
+    },
+    {
+      id: "programs-not-offered",
+      title: "Programs not offered or not in the current AdZU list",
+      category: "admissions",
+      sourceUrl: PROGRAM_BROCHURE_URL,
+      sourceType: "official-pdf",
+      addedAt: PROGRAMS_CHECKED,
+      text: `Use this note when a student names a program that is not in AdZU's official program catalog. Never confirm that an unlisted program exists, and never describe its curriculum, licensure, or career outcomes as if AdZU offered it.
+
+BS Mechanical Engineering is NOT offered at AdZU. It is not in the current official program list. If a student asks about Mechanical Engineering, say clearly that AdZU does not list it. Then mention the engineering programs that are listed: BS Civil Engineering, BS Computer Engineering, BS Electronics Communications Engineering, BS Biomedical Engineering, and Associate in Electronics Engineering Technology. If Mechanical Engineering is their goal, they would need to check other universities. The Admissions & Aid Office can confirm.
+
+Other programs that are not in the current AdZU list include BS Architecture, BS Chemical Engineering, BS Industrial Engineering, BS Petroleum Engineering, BS Mining Engineering, BS Aeronautical Engineering, and a separate BS Electrical Engineering. Do not say AdZU offers these unless a newer official note says so.
+
+Some older AdZU pages use names that are no longer current: AB Economics, AB English, AB Interdisciplinary Studies, Associate in Computer Networking, BS Accounting Technology, BS Business Administration major in Corporate Management, Associate in Office Administration, and BS Electronic and Communications Engineering. Treat these as older or renamed programs, not as current offerings. For example, BA English Language Studies is the current name for the English program, BS Office Administration is the current office-administration program, and BS Electronics Communications Engineering is the current ECE name.
+
+If a program is not in the catalog, say: "That program is not in AdZU's current official program list. I don't want to describe it as an AdZU program. Please confirm with the Admissions & Aid Office."`,
+    },
+    {
+      id: "programs-facebook-guide",
+      title: "AdZU College Guide for SY 2025-2026 (official Facebook post)",
+      category: "admissions",
+      sourceUrl: FACEBOOK_COURSE_GUIDE,
+      sourceType: "official-facebook",
+      addedAt: PROGRAMS_CHECKED,
+      text: `AdZU's official Facebook page published a post titled "AdZU COLLEGE GUIDE | Course Offerings for SY 2025-2026" to help students explore the college programs.
+
+Use the Facebook guide as a cross-check for the college offerings, together with the official Academic Programs brochure and the current school pages. The Facebook post is for SY 2025-2026; for the current school year, confirm with the Admissions & Aid Office because program names and offerings can change.
+
+Neither the official Academic Programs brochure nor the current school pages list BS Mechanical Engineering. AdZU's current program list does not include it.`,
     },
     {
       id: "general-about",
