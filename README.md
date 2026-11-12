@@ -28,7 +28,7 @@ The staff directory is also in the knowledge base, so questions like "who is the
 
 ## Features
 
-- **Chat first, no lane picker.** `/` is the chat. The composer is focused, there are no forms to start, and the director greets you immediately.
+- **Chat first, no lane picker.** `/` is the chat. The composer is focused, and the **director chibi, Ma'am Jen,** greets you immediately.
 - **Automatic desk handoff.** Admissions questions go to Ma'am Sherry (CET, permits, schedules) or Ma'am Marilou (freshman, transferee, enrollment). Scholarship questions go to Ma'am Rose (grants, financial aid, requirements, documents) or Ma'am Cris (deadlines, status, renewals, ASAA, interviews, results). Ma'am Jen handles identity and office/location questions, staff questions, and anything unclear.
 - **Inline chibi avatars.** The active guide's SVG chibi appears beside each reply in the transcript. The chibis blink, breathe, sway, and move their mouths while answering; there is no separate stage panel.
 - **Cited answers.** Retrieval runs over the knowledge base; the model answers only from retrieved passages; citations look like `[1]`, `[2]`. A collapsible **Sources** panel shows the official page or file.
@@ -68,7 +68,7 @@ The app works without any API key. It tries providers in this order and skips an
 
 ### What "free" means in practice
 
-- **Pollinations** is keyless and works on a fresh deployment, but the anonymous tier is shared and rate-limited (at the time of writing, roughly one reply per 45 seconds per IP). When it is throttled, the app falls back to quoted notes. This is the zero-setup path.
+- **Pollinations** is keyless and works on a fresh deployment, but the anonymous tier is shared and rate-limited. When it is throttled, the app falls back to quoted notes. This is the zero-setup path.
 - **Ollama** is the best local option. Set `OLLAMA_BASE_URL=http://127.0.0.1:11434` and `OLLAMA_MODEL=gemma3:4b` (or `llama3.1:8b`). The app only tries Ollama when the URL is set, so a Vercel deployment does not wait on localhost.
 - **For a public deployment**, add one free key. Google AI Studio's free Gemini tier is the fastest path: <https://aistudio.google.com/apikey>. OpenRouter and Groq free tiers also work.
 - The staff desk shows the active AI mode (`AI connected`, `Free AI (no key)`, or `Notes only`).
@@ -83,7 +83,7 @@ Copy `.env.example` to `.env.local`. All AI variables are server-side.
 | `GEMINI_API_KEY` | Recommended | Google AI Studio key. Free tier. |
 | `GEMINI_MODEL` | No | Defaults to `gemini-3.5-flash-lite`. |
 | `OPENROUTER_API_KEY` | No | OpenRouter key (free models supported). |
-| `OPENROUTER_MODEL` | No | Defaults to a free model. |
+| `OPENROUTER_MODEL` | No | Defaults to `google/gemma-4-31b-it:free`. |
 | `GROQ_API_KEY` | No | Groq key. |
 | `GROQ_MODEL` | No | Defaults to `openai/gpt-oss-120b`. |
 | `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` | No | Any OpenAI-compatible endpoint; all three must be set. |
@@ -94,7 +94,7 @@ Copy `.env.example` to `.env.local`. All AI variables are server-side.
 | `BLOB_READ_WRITE_TOKEN` | Recommended on Vercel | Persistent KB/gap storage via Vercel Blob. |
 | `NEXT_PUBLIC_SITE_URL` | No | Canonical site URL for metadata. |
 
-> **Privacy note:** free hosted models may retain messages. Don't paste confidential documents into the public chat. The staff desk is the place for internal notes.
+> **Privacy note:** free hosted models may retain messages. Don't paste confidential documents into the public chat. The staff desk is the place for internal notes. The Info gaps queue redacts emails and phone numbers, but other details in a question may remain.
 
 ---
 
@@ -103,11 +103,11 @@ Copy `.env.example` to `.env.local`. All AI variables are server-side.
 Open `/admin` and enter the passcode.
 
 - **Guided note** — answer a real student question with a title, desk, owner, short answer, steps, requirements, fee/deadline, and source URL. The app composes a clean note for retrieval. This is the recommended way to add a new FAQ.
-- **Upload a file** — PDF (selectable text), DOCX, TXT, MD, CSV, JSON, HTML, or an image (OCR in the browser). The extracted text is shown in an editable preview before anything is saved. Scanned PDFs with no selectable text are rejected; upload page images instead so OCR can run.
+- **Upload a file** — PDF (selectable text), DOCX, TXT, MD, CSV, JSON, HTML, XML, or an image (OCR in the browser). The extracted text is shown in an editable preview before anything is saved. Scanned PDFs with no selectable text are rejected; upload page images instead so OCR can run.
 - **Paste text** — for memos, announcements, or copied official text.
 - **Publish or draft** — published notes are used by the chat immediately. Drafts are hidden from retrieval and the public API.
 - **Library** — search titles and full text, filter by desk or status, edit the full text, publish/unpublish, delete, and export JSON.
-- **Info gaps** — every question that the chat could not answer is logged (emails and phone numbers redacted). Open one and draft a note directly from it.
+- **Info gaps** — questions the chat could not answer, or answered only with a fallback, are logged (emails and phone numbers redacted). Open one and draft a note directly from it.
 - **Team** — the five staff profiles and office contact details.
 
 Files are limited to **4 MB** and **300,000 characters** of extracted text. Duplicate text in the same desk is rejected. The Blob object is public; don't upload confidential material.
@@ -138,7 +138,7 @@ npm run dev
 
 On macOS/Linux use `cp .env.example .env.local` instead. Open <http://localhost:3000>. The staff desk is at <http://localhost:3000/admin>.
 
-If `ADMIN_PASSCODE` is unset in development, the passcode is `adzu-admin`. In production, an unset passcode fails closed (all admin requests are rejected).
+If `ADMIN_PASSCODE` is unset in development, the passcode is `adzu-admin`. If you copy `.env.example` unchanged, the passcode is `change-me-please` until you edit it. In production, an unset passcode fails closed (all admin requests are rejected).
 
 ### Production build (and PWA testing)
 
@@ -168,7 +168,7 @@ The service worker caches pages and static assets, but not `/api/*`. New questio
 
 1. Push the repo to GitHub.
 2. Import it at <https://vercel.com/new>.
-3. Set `ADMIN_PASSCODE` and at least one AI key (Gemini is enough for a good free default).
+3. Set `ADMIN_PASSCODE` and, optionally, one AI key (Gemini is enough for a good free default).
 4. Connect a Vercel Blob store and set `BLOB_READ_WRITE_TOKEN` so staff uploads persist.
 5. Deploy.
 
@@ -227,7 +227,7 @@ scripts/make-icons.mjs     icon generator
 
 ## Art and animation
 
-The chibis are **hand-authored SVG**, not generated raster images. That was deliberate: SVG keeps the faces crisp at every size, lets the same art work as the inline chat avatar, and makes the animations possible without video or sprite sheets.
+The chibis are **hand-authored SVG**, not generated raster images. Image generation was unavailable when this project was built, so every character is drawn directly in SVG. That also keeps the faces crisp at every size, lets the same art work as the inline chat avatar, and makes the animations possible without video or sprite sheets.
 
 Each character has a layered SVG with a distinct face shape, eyes, brows, nose, mouth, hairline, outfit, and accessories. CSS drives the idle breathing, blinking, hair sway, ponytail/bun sway, plant sway, and the talking mouth. `prefers-reduced-motion` turns the animation off.
 

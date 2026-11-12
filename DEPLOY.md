@@ -61,7 +61,7 @@ Before committing, confirm that secrets and local data are excluded:
 git status --short
 ```
 
-`.gitignore` already excludes `.env`, `.env*.local`, `.env.production`, `data/kb.json`, `data/*.bak`, `.next/`, and `node_modules/`. Do not force-add them.
+`.gitignore` already excludes `.env`, `.env*.local`, `.env.production`, `data/kb.json`, `data/gaps.json`, `data/*.bak`, `.next/`, and `node_modules/`. Do not force-add them.
 
 ### Option B - GitHub CLI
 
@@ -107,7 +107,7 @@ git push -u origin main
 | --- | --- | --- |
 | `ADMIN_PASSCODE` | A long random passphrase | Production (and Preview if you use it) |
 | `GEMINI_API_KEY` | Free Google AI Studio key (recommended), **or** use one of the alternatives below | Production |
-| `BLOB_READ_WRITE_TOKEN` | Do not add this manually; Vercel injects it when you connect a Blob store (step below) | Production, Preview, Development |
+| `BLOB_READ_WRITE_TOKEN` | Usually injected by Vercel when you connect a Blob store (step below); add it manually only when reusing an existing store | Production, Preview, Development |
 | `NEXT_PUBLIC_SITE_URL` | `https://<your-project>.vercel.app` (or your custom domain); leave blank on the first deploy if you do not know the URL yet | Production |
 
 Pick **one** AI option (Gemini is the fastest free default):
@@ -119,7 +119,7 @@ Pick **one** AI option (Gemini is the fastest free default):
 
 No key? Leave them all blank. The app tries Pollinations' keyless free tier, then falls back to quoted notes. Pollinations' anonymous tier is rate-limited, so a free Gemini key is strongly recommended for a public deployment. Do **not** set `OLLAMA_BASE_URL` on Vercel; it is for local/self-hosted use.
 
-You may configure more than one. The fallback order is custom -> OpenRouter -> Gemini -> Groq -> quoted notes.
+You may configure more than one. The exact fallback order is custom -> Gemini -> OpenRouter -> Groq -> Ollama (only when `OLLAMA_BASE_URL` is set) -> Pollinations (unless `FREE_AI=off`) -> quoted notes.
 
 4. Click **Deploy**.
 
@@ -132,6 +132,8 @@ Do this before staff upload anything.
 3. Name the store, create it, and **Connect** it to this project.
 4. Vercel injects `BLOB_READ_WRITE_TOKEN` into the project's environments. Confirm it appears under **Settings** -> **Environment Variables**.
 5. Redeploy if the store was connected after the current deployment was built.
+
+If you are reusing an existing Blob store instead of creating one here, add its read-write token manually under **Settings** -> **Environment Variables** with the exact name `BLOB_READ_WRITE_TOKEN`, then redeploy.
 
 Without this token, the deployment is **read-only**: the built-in seed notes still answer questions, but `/admin` refuses new uploads and deletes.
 
@@ -169,7 +171,7 @@ Set environment variables from the CLI:
 
 ```powershell
 vercel env add ADMIN_PASSCODE production
-vercel env add OPENROUTER_API_KEY production
+vercel env add GEMINI_API_KEY production
 ```
 
 Each command prompts for the value. Add the same variables to `preview` and `development` if needed. To inspect or remove them:
@@ -199,12 +201,12 @@ Blob store creation is easiest in the dashboard (**Storage** -> **Create** -> **
 
 | Variable | Required | Notes |
 | --- | --- | --- |
-| `ADMIN_PASSCODE` | **Yes in production** | Long random secret. If unset in production, admin access fails closed. Locally it defaults to `adzu-admin` only when the variable is unset. |
+| `ADMIN_PASSCODE` | **Yes in production** | Long random secret. If unset in production, admin access fails closed. Locally it defaults to `adzu-admin` only when the variable is unset; copying `.env.example` as-is sets `change-me-please`, so change it. |
 | `AI_BASE_URL` | One AI option | Base URL only; the app appends `/chat/completions`. Usually ends in `/v1`. |
 | `AI_API_KEY` | One AI option | Key for the custom endpoint. |
 | `AI_MODEL` | One AI option | Model ID for the custom endpoint. |
 | `OPENROUTER_API_KEY` | One AI option | Free OpenRouter models are supported. |
-| `OPENROUTER_MODEL` | No | Default: a free OpenRouter model. |
+| `OPENROUTER_MODEL` | No | Default: `google/gemma-4-31b-it:free`. |
 | `GEMINI_API_KEY` | One AI option | Google AI Studio / Gemini API key. Recommended free default. |
 | `GEMINI_MODEL` | No | Default: `gemini-3.5-flash-lite`. |
 | `GROQ_API_KEY` | One AI option | Groq API key. |
@@ -215,6 +217,8 @@ Blob store creation is easiest in the dashboard (**Storage** -> **Create** -> **
 | `POLLINATIONS_MODEL` | No | Default: `openai-fast`. |
 | `BLOB_READ_WRITE_TOKEN` | Strongly recommended | Added automatically when a Blob store is connected. Without it, uploads do not persist on Vercel. |
 | `NEXT_PUBLIC_SITE_URL` | No | Defaults to `https://adzu-ask.vercel.app`; set it to your deployment URL or custom domain. |
+
+For the custom provider, `AI_BASE_URL`, `AI_API_KEY`, and `AI_MODEL` must all be present. `OLLAMA_BASE_URL` is intentionally skipped on Vercel unless you self-host Ollama.
 
 Never commit `.env.local` or provider keys. Environment variable changes only take effect after a new deployment.
 
@@ -238,10 +242,10 @@ Vercel Functions have a request body limit of approximately **4.5 MB**. This app
 
 Practical consequences:
 
-- Upload one file per request; the admin UI already submits files sequentially.
+- Upload one file at a time; the admin desk extracts a preview before saving.
 - PDFs and DOCX files larger than 4 MB are rejected before parsing.
 - Large scanned documents should be split, uploaded as page images for browser OCR, or pasted as text.
-- Images are OCR'd **in the browser**, but the original image is still attached to the admin request, so the 4 MB cap still applies.
+- Images are OCR'd **in the browser**; only the reviewed text is sent when saving, so the image itself does not hit Vercel's body limit. The 4 MB cap still applies to the image selected in the browser.
 - A 413 / "payload too large" response usually means the request exceeded Vercel's ~4.5 MB platform limit.
 
 ---
@@ -279,12 +283,12 @@ Confirm:
 - Open DevTools -> **Application** -> **Manifest** and confirm the manifest and icons load.
 - Confirm the service worker is registered (production deployment only).
 - Install the app from the browser prompt, or use the iOS "Add to Home Screen" instructions.
-- Go offline and confirm the `/offline` page appears. New chat questions require a connection by design.
+- Go offline and open a page you have not visited yet to confirm the `/offline` fallback. Previously cached pages may still load, but new chat questions require a connection by design.
 
 5. **Blob persistence**
 
 - Add a note in production, then redeploy (or wait for a new deployment) and confirm the note is still present.
-- Open the connected Blob store and verify `adzu-ask/kb.json` exists.
+- Open the connected Blob store and verify `adzu-ask/kb.json` exists. If you tested the Info gaps queue, verify `adzu-ask/gaps.json` as well.
 
 ---
 
@@ -295,8 +299,8 @@ Confirm:
 | `/admin` rejects the passcode | `ADMIN_PASSCODE` is unset, wrong, or the deployment predates the env change. Set it and redeploy. In production there is no fallback. |
 | Admin says "read-only deployment" | No `BLOB_READ_WRITE_TOKEN` in the Vercel environment. Connect a Blob store and redeploy. |
 | Uploads work locally but not on Vercel | Local writes go to `data/kb.json`, which is not deployed. Connect Blob and re-add the documents through production `/admin`. Alternatively, edit `data/seed.ts` and redeploy. |
-| Answers always say "quoted notes" / no AI | No provider key is set, or all providers failed or were rate-limited. Pollinations' anonymous tier allows roughly one reply per 45 seconds per IP. Check `/api/health` provider flags and Vercel function logs for `[chat] <provider> failed`. Add a free Gemini key for a reliable public default. |
-| 504 / function timeout | The route caps the whole answer at about 40 seconds and the platform function at 60. If several providers are slow, the notes fallback runs before the cap. Remove unused keys, use a faster provider, or increase `maxDuration` if your plan allows. |
+| Answers always say "quoted notes" / no AI | No provider key is set, or all providers failed or were rate-limited. Pollinations' anonymous tier is shared and rate-limited. Check `/api/health` provider flags and Vercel function logs for `[chat] <provider> failed`. Add a free Gemini key for a reliable public default. |
+| 504 / function timeout | The route caps the whole answer at about 40 seconds and the platform function at 60. If several providers are slow, the notes fallback runs before the cap. Remove unused keys or use a faster provider. Raising `maxDuration` alone will not extend the 40-second internal deadline in `lib/providers.ts`. |
 | 413 Payload Too Large | File exceeds the app's 4 MB cap or Vercel's ~4.5 MB body limit. Split the file or paste the relevant text. |
 | Scanned PDF rejected | It has no selectable text. Upload page images so browser OCR can extract text, or paste the text. |
 | Image OCR does not start / takes long | Tesseract.js runs in the browser and downloads its engine and English language data on first use. Check the user's network and try a clearer image. |
@@ -311,7 +315,7 @@ Confirm:
 
 ## 9. Security and operations
 
-- **The knowledge base and gap log are public in Blob mode.** Blob objects are written with public access (`adzu-ask/kb.json`, `adzu-ask/gaps.json`). Drafts are included in the KB JSON even though the chat hides them. Do not upload confidential, personal, or internal-only documents.
+- **The knowledge base and gap log are public in Blob mode.** Blob objects are written with public access (`adzu-ask/kb.json`, `adzu-ask/gaps.json`). Drafts are included in the KB JSON even though the chat hides them. Do not upload confidential, personal, or internal-only documents. Gap questions are redacted for emails and phone numbers only; names or other details may remain.
 - **The admin passcode is a shared secret.** Use a long random value, rotate it if it leaks, and remember that locking the desk only clears the browser's `sessionStorage`.
 - **Admin endpoints are protected by the passcode only.** There is no separate rate limit or account system for admin attempts. Use a strong passcode.
 - **Chat rate limiting is best-effort.** It uses an in-memory map (60 requests per IP per 10 minutes) and is not shared across serverless instances or cold starts.
